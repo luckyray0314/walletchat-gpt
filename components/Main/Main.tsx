@@ -1,8 +1,6 @@
 "use client"
 import { useContext, useState } from 'react';
-import { assets } from '../../assets/assets';
 import "./Main.css"
-import { Context } from '../../context/Context';
 import {
     Collapsible,
     CollapsibleContent,
@@ -11,7 +9,9 @@ import {
 import { ChevronsUpDown } from "lucide-react"
   
 import Image from 'next/image';
+import { Context } from '@/context/Context';
 import { Button } from '@/components/ui/button';
+import { assets } from '@/assets/assets';
 
 const Main = () => {
     const [isOpen, setIsOpen] = useState<boolean>(true)
@@ -47,19 +47,19 @@ const Main = () => {
                         <CollapsibleContent>
                             <div className="cards">
                                 <div className="card">
-                                    <p>Suggest beautiful places to see on an upcoming road trip</p>
+                                    <p>Renzo is a Liquid Restaking Token (LRT) and Strategy Manager for EigenLayer.</p>
                                     <Image src={assets.compass_icon} alt="" />
                                 </div>
                                 <div className="card">
-                                    <p>Briefly summarize this concept: urban planning</p>
+                                    <p>The dashboard is a more indicators like corr, PnL of token holders are included to take a deeper dive.</p>
                                     <Image src={assets.bulb_icon} alt="" />
                                 </div>
                                 <div className="card">
-                                    <p>Brainstorm team bonding activities for our work retreat</p>
+                                    <p>This dashboard covers Aave's Reserve Factors by chain and its Ecosystem Reserve.</p>
                                     <Image src={assets.message_icon} alt="" />
                                 </div>
                                 <div className="card">
-                                    <p>Improve the readability of the following code</p>
+                                    <p>Wallet analysis Solana memecoins trades.</p>
                                     <Image src={assets.code_icon} alt="" />
                                 </div>
                             </div>
