@@ -1,3 +1,4 @@
+import Sidebar from "@/components/Sidebar/Sidebar"
 
 const DashboardLayout = ({
     children
@@ -5,9 +6,10 @@ const DashboardLayout = ({
     children: React.ReactNode 
 }) => {
     return (
-        <div>
+        <>
+            <Sidebar />
             {children}
-        </div>
+        </>
     )
 }
 
