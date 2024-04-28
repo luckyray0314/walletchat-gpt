@@ -7,7 +7,6 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { ChevronsUpDown } from "lucide-react"
-import Iframe from 'react-iframe'
   
 import Image from 'next/image';
 import { Context } from '@/context/Context';
@@ -24,7 +23,7 @@ const DashboardPage = () => {
             <p>WalletChat AI</p>
             <Image src={assets.user_icon} alt="" />
         </div>
-        <div className="main-container">
+        <div className="main-container flex flex-row justify-between">
             {!showResult 
             
                 ? 
@@ -45,8 +44,10 @@ const DashboardPage = () => {
                             </Button>
                             </CollapsibleTrigger>
                         </div>
-                        <div className="rounded-md border px-4 py-3 font-mono text-sm">
-                          Renzo is a Liquid Restaking Token (LRT) and Strategy Manager for EigenLayer.
+                        <div className="rounded-md border px-4 py-3 font-mono text-sm leading-8">
+                            {`Renzo is a Liquid Restaking Token (LRT) and Strategy Manager for EigenLayer. It is the interface to the EigenLayer ecosystem securing Actively Validated Services (AVSs) and offering a higher yield than ETH staking.
+
+                            The protocol abstracts all complexity from the end-user and enables easy collaboration between them and EigenLayer node operators.`}
                         </div>
                     </Collapsible>
                 </>
@@ -71,14 +72,14 @@ const DashboardPage = () => {
                 </div> 
             }
             
-            {/* <Iframe url="https://dune.com/maybeYonas/renzo-protocol"
-              width="640px"
-              height="320px"
-              id=""
-              className=""
-              display="block"
-              position="relative"
-            /> */}
+            <Image
+                src={assets.renzo_icon}
+                alt='renzo'
+                width={500}
+                style={{
+                    marginLeft: "5%"
+                }}
+            />
             <div className="main-bottom">
                 <div className="search-box">
                     <input onChange={(e) => setInput(e.target.value)} value={input} type="text" placeholder='Enter a prompt here' />
