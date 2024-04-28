@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { Context } from '@/context/Context';
 import { Button } from '@/components/ui/button';
 import { assets } from '@/assets/assets';
+import Link from 'next/link';
 
 const Main = () => {
     const [isOpen, setIsOpen] = useState<boolean>(true)
@@ -25,7 +26,6 @@ const Main = () => {
         </div>
         <div className="main-container">
             {!showResult 
-            
                 ? 
                 <>
                     <Collapsible
@@ -46,25 +46,46 @@ const Main = () => {
                         </div>
                         <CollapsibleContent>
                             <div className="cards">
-                                <div className="card">
+                                <Link href={"/dashboard"} className="card">
                                     <p>Renzo is a Liquid Restaking Token (LRT) and Strategy Manager for EigenLayer.</p>
                                     <Image src={assets.compass_icon} alt="" />
-                                </div>
-                                <div className="card">
+                                </Link>
+                                <Link href={"/dashboard"} className="card">
                                     <p>The dashboard is a more indicators like corr, PnL of token holders are included to take a deeper dive.</p>
                                     <Image src={assets.bulb_icon} alt="" />
-                                </div>
-                                <div className="card">
+                                </Link>
+                                <Link href={"/dashboard"} className="card">
                                     <p>This dashboard covers Aave's Reserve Factors by chain and its Ecosystem Reserve.</p>
                                     <Image src={assets.message_icon} alt="" />
-                                </div>
-                                <div className="card">
+                                </Link>
+                                <Link href={"/dashboard"} className="card">
                                     <p>Wallet analysis Solana memecoins trades.</p>
                                     <Image src={assets.code_icon} alt="" />
-                                </div>
+                                </Link>
                             </div>
                         </CollapsibleContent>
                     </Collapsible>
+                    <div className="max-w-2xl mx-auto py-4">
+                        <div className='flex items-center space-x-4'>
+                            <span className='text-sm font-medium'>Try searching</span>
+                            <div className="flex items-center justify-center space-x-4">
+                                <button className="flex items-center text-xs px-1 py-1 border rounded-full hover:bg-[#dfe4ea]">
+                                    💤 Give the last 3 transactions for vitalik.eth
+                                </button>
+                                <button className="flex items-center text-xs px-1 py-1 border rounded-full hover:bg-[#dfe4ea]">
+                                    🦘 Use Etherscan to call owner() on the Bored Ape YC contract
+                                </button>
+                            </div>
+                        </div>
+                            <div className="flex items-center justify-center space-x-4 mt-4">
+                            <button className="flex items-center text-xs px-1 py-1 border rounded-full hover:bg-[#dfe4ea]">
+                                🪣 Does crypto-kevin.eth hold any VPP on base?
+                            </button>
+                            <button className="flex items-center px-1 text-xs py-1 border rounded-full hover:bg-[#dfe4ea]">
+                                👁️ what's the hype about base
+                            </button>
+                        </div>
+                    </div>
                 </>
                 :
                 <div className='result'>

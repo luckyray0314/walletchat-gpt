@@ -24,7 +24,7 @@ const DashboardPage = () => {
             <p>WalletChat AI</p>
             <Image src={assets.user_icon} alt="" />
         </div>
-        <div className="main-container flex flex-row">
+        <div className="main-container">
             {!showResult 
             
                 ? 
@@ -71,14 +71,14 @@ const DashboardPage = () => {
                 </div> 
             }
             
-            <Iframe url="https://dune.com/maybeYonas/renzo-protocol"
+            {/* <Iframe url="https://dune.com/maybeYonas/renzo-protocol"
               width="640px"
               height="320px"
               id=""
               className=""
               display="block"
               position="relative"
-            />
+            /> */}
             <div className="main-bottom">
                 <div className="search-box">
                     <input onChange={(e) => setInput(e.target.value)} value={input} type="text" placeholder='Enter a prompt here' />
