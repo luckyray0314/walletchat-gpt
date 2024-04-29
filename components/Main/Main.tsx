@@ -70,19 +70,19 @@ const Main = () => {
                             <span className='text-sm font-medium'>Try searching</span>
                             <div className="flex items-center justify-center space-x-4">
                                 <button className="flex items-center text-xs px-1 py-1 border rounded-full hover:bg-[#dfe4ea]">
-                                    💤 Give the last 3 transactions for vitalik.eth
+                                    Give the last 3 transactions for vitalik.eth
                                 </button>
                                 <button className="flex items-center text-xs px-1 py-1 border rounded-full hover:bg-[#dfe4ea]">
-                                    🦘 Use Etherscan to call owner() on the Bored Ape YC contract
+                                    Use Etherscan to call owner() on the Bored Ape YC contract
                                 </button>
                             </div>
                         </div>
                             <div className="flex items-center justify-center space-x-4 mt-4">
                             <button className="flex items-center text-xs px-1 py-1 border rounded-full hover:bg-[#dfe4ea]">
-                                🪣 Does crypto-kevin.eth hold any VPP on base?
+                                Does crypto-kevin.eth hold any VPP on base?
                             </button>
                             <button className="flex items-center px-1 text-xs py-1 border rounded-full hover:bg-[#dfe4ea]">
-                                👁️ what's the hype about base
+                                what's the hype about base
                             </button>
                         </div>
                     </div>
