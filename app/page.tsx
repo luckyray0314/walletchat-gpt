@@ -3,9 +3,9 @@ import Sidebar from "@/components/Sidebar/Sidebar";
 
 export default function Home() {
   return (
-    <>
-        <Sidebar />
-        <Main />
-    </>
+    <div className="home">
+      <Sidebar />
+      <Main />
+    </div>
   );
 }

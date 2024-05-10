@@ -6,7 +6,7 @@ import ContextProvider from "@/context/Context";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "WalletChat GPT",
+  title: "WalletChat AI",
   description: "Conversational Blockchain explorer and Token analysis",
 };
 

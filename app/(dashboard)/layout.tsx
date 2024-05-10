@@ -1,5 +1,3 @@
-import Sidebar from "@/components/Sidebar/Sidebar"
-
 const DashboardLayout = ({
     children
 } : {
@@ -7,7 +5,6 @@ const DashboardLayout = ({
 }) => {
     return (
         <>
-            <Sidebar />
             {children}
         </>
     )

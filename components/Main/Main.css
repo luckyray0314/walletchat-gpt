@@ -79,8 +79,8 @@
     bottom: 0;
     width: 100%;
     max-width: 900px;
-    padding: 0px 20px;
-    margin: auto;
+    /* padding: 0px 20px; */
+    /* margin: auto; */
 }
 
 .search-box {

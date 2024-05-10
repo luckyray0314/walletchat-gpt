@@ -13,6 +13,7 @@ import { Context } from '@/context/Context';
 import { Button } from '@/components/ui/button';
 import { assets } from '@/assets/assets';
 import Link from 'next/link';
+import Header from '../Common/Header';
 
 const Main = () => {
     const [isOpen, setIsOpen] = useState<boolean>(true)
@@ -20,10 +21,7 @@ const Main = () => {
 
   return (
     <div className='main'>
-        <div className="nav">
-            <p>WalletChat AI</p>
-            <Image src={assets.user_icon} alt="" />
-        </div>
+        <Header />
         <div className="main-container">
             {!showResult 
                 ? 
@@ -47,25 +45,25 @@ const Main = () => {
                         <CollapsibleContent>
                             <div className="cards">
                                 <Link href={"/dashboard"} className="card">
-                                    <p>Renzo is a Liquid Restaking Token (LRT) and Strategy Manager for EigenLayer.</p>
+                                    <p>Give the last 3 transactions for vitalik.eth</p>
                                     <Image src={assets.compass_icon} alt="" />
                                 </Link>
                                 <Link href={"/dashboard"} className="card">
-                                    <p>The dashboard is a more indicators like corr, PnL of token holders are included to take a deeper dive.</p>
+                                    <p>Use Etherscan to call owner() on the Bored Ape YC contract</p>
                                     <Image src={assets.bulb_icon} alt="" />
                                 </Link>
                                 <Link href={"/dashboard"} className="card">
-                                    <p>This dashboard covers Aave's Reserve Factors by chain and its Ecosystem Reserve.</p>
+                                    <p> Does crypto-kevin.eth hold any VPP on base?</p>
                                     <Image src={assets.message_icon} alt="" />
                                 </Link>
                                 <Link href={"/dashboard"} className="card">
-                                    <p>Wallet analysis Solana memecoins trades.</p>
+                                    <p>what's the hype about base</p>
                                     <Image src={assets.code_icon} alt="" />
                                 </Link>
                             </div>
                         </CollapsibleContent>
                     </Collapsible>
-                    <div className="max-w-2xl mx-auto py-4">
+                    {/* <div className="max-w-2xl mx-auto py-4">
                         <div className='flex items-center space-x-4'>
                             <span className='text-sm font-medium'>Try searching</span>
                             <div className="flex items-center justify-center space-x-4">
@@ -85,7 +83,7 @@ const Main = () => {
                                 what's the hype about base
                             </button>
                         </div>
-                    </div>
+                    </div> */}
                 </>
                 :
                 <div className='result'>
