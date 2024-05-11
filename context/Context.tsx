@@ -28,7 +28,7 @@ const ContextProvider = (props: any) => {
         setResultData("");
         setLoading(true);
         setShowResult(true);
-        let response;
+        let response: any;
         if(prompt !== undefined) {
             response = await runChat(prompt)
             setRecentPrompt(prompt);
