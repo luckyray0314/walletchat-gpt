@@ -55,18 +55,12 @@ export default function TemporaryDrawer() {
       </IconButton>
       <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
         <div className="drawer-div">
-          <a href="/">
-            <p className="link">Home</p>
-          </a>
-          <a href="/compare">
-            <p className="link">Compare</p>
-          </a>
-          <a href="/watchlist">
-            <p className="link">Watchlist</p>
-          </a>
-          <a href="/dashboard">
-            <p className="link">Dashboard</p>
-          </a>
+        <a href="/">
+          <p className="link">Home</p>
+        </a>
+        <a href="/dashboard">
+          <p className="link">Coinlist</p>
+        </a>
           <Switch checked={darkMode} onClick={() => changeMode()} />
         </div>
       </Drawer>

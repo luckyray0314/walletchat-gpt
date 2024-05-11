@@ -26,7 +26,29 @@ const Main = () => {
             {!showResult 
                 ? 
                 <>
-                    <Collapsible
+                    <div className="greet">
+                        <p><span>Hello, Kevin.</span></p>
+                        <p>How can I help you today?</p>
+                    </div>
+                    <div className="cards">
+                        <div className="card">
+                            <p>Suggest beautiful places to see on an upcoming road trip</p>
+                            <Image src={assets.compass_icon} alt="" />
+                        </div>
+                        <div className="card">
+                            <p>Briefly summarize this concept: urban planning</p>
+                            <Image src={assets.bulb_icon} alt="" />
+                        </div>
+                        <div className="card">
+                            <p>Brainstorm team bonding activities for our work retreat</p>
+                            <Image src={assets.message_icon} alt="" />
+                        </div>
+                        <div className="card">
+                            <p>Improve the readability of the following code</p>
+                            <Image src={assets.code_icon} alt="" />
+                        </div>
+                    </div>
+                    {/* <Collapsible
                         open={isOpen}
                         onOpenChange={setIsOpen}
                         className="space-y-2"
@@ -62,7 +84,7 @@ const Main = () => {
                                 </Link>
                             </div>
                         </CollapsibleContent>
-                    </Collapsible>
+                    </Collapsible> */}
                     {/* <div className="max-w-2xl mx-auto py-4">
                         <div className='flex items-center space-x-4'>
                             <span className='text-sm font-medium'>Try searching</span>
@@ -92,7 +114,7 @@ const Main = () => {
                         <p>{recentPrompt}</p>
                     </div>
                     <div className='result-data'>
-                        <Image src={assets.gemini_icon} alt="" />
+                        <Image src={assets.wallet_chat} alt="" />
                         {loading ? 
                             <div className='loader'>
                                 <hr />
