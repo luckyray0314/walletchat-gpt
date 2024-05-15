@@ -44,7 +44,6 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
             ],
             tools: functions,
             tool_choice: "auto",
-            // function_call: "auto"
         });
 
         const responseMessage = completion.choices[0].message;
@@ -66,7 +65,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
                 const functionArgs = JSON.parse(toolCall.function.arguments);
                 const functionResponse = await functionToCall(
                     functionArgs.ensName,
-                    functionArgs.unit
+                    // functionArgs.unit
                 );
                 // messages.push({
                 //     tool_call_id: toolCall.id,
