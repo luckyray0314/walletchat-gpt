@@ -25,6 +25,28 @@ const functions: ChatCompletionTool[] = [
                 required: ["ensName"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_wallet_info",
+            description: "Retrieve the ETH balance, transaction lists, and token transfers of a given wallet address using the Etherscan API",
+            parameters: {
+                type: "object",
+                properties: {
+                    address: {
+                        type: "string",
+                        description: "The Ethereum wallet address to retrieve information for"
+                    },
+                    action: {
+                        type: "string",
+                        description: "The action to perform (balance, txlist, tokentx, etc.)",
+                        enum: ["balance", "txlist", "tokentx"]
+                    }
+                },
+                required: ["address", "action"]
+            }
+        }
     }
 ];
 
@@ -55,6 +77,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
             // Note: the JSON response may not always be valid; be sure to handle errors
             const availableFunctions: any = {
                 resolve_ens_name: resolveEnsNameToAddress,
+                get_wallet_info: getWalletInfo,
             }; // only one function in this example, but you can have multiple
 
             // messages.push(responseMessage); // extend conversation with assistant's reply
@@ -63,16 +86,16 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
                 const functionName = toolCall.function.name;
                 const functionToCall = availableFunctions[functionName];
                 const functionArgs = JSON.parse(toolCall.function.arguments);
-                const functionResponse = await functionToCall(
-                    functionArgs.ensName,
-                    // functionArgs.unit
-                );
+                const functionResponse = await functionToCall(functionArgs);
                 // messages.push({
                 //     tool_call_id: toolCall.id,
                 //     role: "tool",
                 //     name: functionName,
                 //     content: functionResponse,
                 // }); // extend conversation with function response
+
+                console.log(functionArgs)
+                console.log(functionResponse)
 
                 return new NextResponse(JSON.stringify(functionResponse), {
                     status: 200,
@@ -107,12 +130,31 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
 
 
 // ENS name resolving function
-async function resolveEnsNameToAddress(ensName: string) {
+async function resolveEnsNameToAddress({ ensName }: { ensName: string }) {
     const baseUrl = 'https://api.v2.walletchat.fun';
     const response = await axios.get(`${baseUrl}/resolve_name/${ensName}`);
     if (response.status === 200) {
         return `The Ethereum address for ${ensName} is ${response.data.address}`;
     } else {
         throw new Error(`Failed to resolve ENS name. Status code: ${response.status}`);
+    }
+}
+
+// Get Wallet Info using Etherscan
+async function getWalletInfo({address, action}: { address: string, action: string }) {
+    const baseUrl = 'https://api.etherscan.io/api';
+    const apiKey = process.env.ETHERSCAN_API_KEY;
+    const response = await axios.get(baseUrl, {
+        params: {
+            module: 'account',
+            action: action,
+            address: address,
+            apikey: apiKey
+        }
+    });
+    if (response.status === 200) {
+        return `The ${action} for this address: ${address} is ${response.data.result}`;
+    } else {
+        throw new Error(`Failed to retrieve wallet info. Status code: ${response.status}`);
     }
 }

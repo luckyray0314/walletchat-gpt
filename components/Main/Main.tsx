@@ -49,7 +49,7 @@ const Main = () => {
                 :
                 <div className='result'>
                     <div className="result-title">
-                        <Image src={assets.user_icon} alt="" />
+                        <Image src={assets.mgoes_icon} alt="" />
                         <p>{recentPrompt}</p>
                     </div>
                     <div className='result-data'>

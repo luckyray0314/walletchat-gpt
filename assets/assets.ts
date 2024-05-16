@@ -15,6 +15,7 @@ import send_icon from './send_icon.png'
 import gemini_icon from './gemini_icon.png'
 import renzo_icon from './renzo.png'
 import wallet_chat from './walletchat-logo.png'
+import mgoes_icon from './mgoes.jpg'
 
 export const assets = {
     history_icon,
@@ -33,5 +34,6 @@ export const assets = {
     send_icon,
     gemini_icon,
     renzo_icon,
-    wallet_chat
+    wallet_chat,
+    mgoes_icon
 }
