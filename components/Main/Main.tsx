@@ -42,6 +42,7 @@ const Main = () => {
     const selectPrompt = async (prompt: string) => {
         setRecentPrompt(prompt);
         await onSent(prompt);
+        setInput("")
     }
 
   return (
