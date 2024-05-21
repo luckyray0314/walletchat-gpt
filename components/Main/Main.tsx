@@ -6,15 +6,43 @@ import { Context } from '@/context/Context';
 import { assets } from '@/assets/assets';
 import Header from '../Common/Header';
 
-const Main = () => {
-    const {onSent, recentPrompt, showResult, loading, resultData, setInput, input} = useContext(Context);
+const prompts = [
+    {
+        id: 1,
+        prompt: "Give the wallet address for crypto-kevin.eth",
+        icon: assets.compass_icon
+    },
+    {
+        id: 2,
+        prompt: "Give the last 3 transactions for vitalik.eth",
+        icon: assets.bulb_icon
+    },
+    {
+        id: 3,
+        prompt: "Use Etherscan to call owner() on the Bored Ape YC contract",
+        icon: assets.message_icon
+    },
+    {
+        id: 4,
+        prompt: "Does crypto-kevin.eth hold any VPP on base?",
+        icon: assets.code_icon
+    },
+]
 
-    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+const Main = () => {
+    const {onSent, recentPrompt, setRecentPrompt, showResult, loading, resultData, setInput, input} = useContext(Context);
+
+    const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
-            onSent();
+            await onSent();
             setInput("")
         }
     };
+
+    const selectPrompt = async (prompt: string) => {
+        setRecentPrompt(prompt);
+        await onSent(prompt);
+    }
 
   return (
     <div className='main'>
@@ -28,22 +56,12 @@ const Main = () => {
                         <p>How can I help you today?</p>
                     </div>
                     <div className="cards">
-                        <div className="card">
-                            <p>Give the last 3 transactions for vitalik.eth</p>
-                            <Image src={assets.compass_icon} alt="" />
-                        </div>
-                        <div className="card">
-                            <p>Use Etherscan to call owner() on the Bored Ape YC contract</p>
-                            <Image src={assets.bulb_icon} alt="" />
-                        </div>
-                        <div className="card">
-                            <p>Does crypto-kevin.eth hold any VPP on base?</p>
-                            <Image src={assets.message_icon} alt="" />
-                        </div>
-                        <div className="card">
-                            <p>What does EOAs stand for in the blockchain world?</p>
-                            <Image src={assets.code_icon} alt="" />
-                        </div>
+                        {prompts?.map((item) => (
+                            <div className="card" onClick={() => selectPrompt(item.prompt)} key={item.id}>
+                                <p>{item.prompt}</p>
+                                <Image src={item.icon} alt="" />
+                            </div>
+                        ))}
                     </div>
                 </>
                 :
