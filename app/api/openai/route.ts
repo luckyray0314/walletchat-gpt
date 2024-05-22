@@ -30,25 +30,87 @@ const functions: ChatCompletionTool[] = [
     {
         type: "function",
         function: {
-            name: "getWalletInfo",
-            description: "Retrieve the ETH balance, transaction lists, and token transfers of a given wallet address using the Etherscan API",
+            name: "etherscanQuery",
+            description: "Query the Etherscan API for a variety of information",
             parameters: {
                 type: "object",
                 properties: {
-                    address: {
+                    module: {
                         type: "string",
-                        description: "The Ethereum wallet address to retrieve information for"
+                        description: "The module being accessed (e.g., account, contract, proxy)",
+                        enum: ["account", "contract", "proxy"]
                     },
                     action: {
                         type: "string",
-                        description: "The action to perform (balance, txlist, tokentx)",
-                        enum: ["balance", "txlist", "tokentx"]
+                        description: "The action to be performed (e.g., balance, txlist, getsourcecode, etc.)",
+                        enum: [
+                            "balance",
+                            "txlist",
+                            "getsourcecode",
+                            "balancemulti",
+                            "txlistinternal",
+                            "tokentx",
+                            "tokennfttx",
+                            "token1155tx",
+                            "getminedblocks",
+                            "txsBeaconWithdrawal",
+                            "balancehistory",
+                            "getabi",
+                            "eth_call"
+                        ]
+                    },
+                    address: {
+                        type: "string",
+                        description: "Ethereum address for the query"
+                    },
+                    tag: {
+                        type: "string",
+                        enum: ["latest", "pending", "earliest"],
+                        description: "The state of the balance (latest or a block number)"
+                    },
+                    startblock: {
+                        type: "integer",
+                        description: "The start block number for queries that involve transaction or event lists"
+                    },
+                    endblock: {
+                        type: "integer",
+                        description: "The end block number for queries that involve transaction or event lists"
+                    },
+                    page: {
+                        type: "integer",
+                        description: "The page number for queries that support pagination"
+                    },
+                    offset: {
+                        type: "integer",
+                        description: "The number of results to return per page for queries that support pagination"
+                    },
+                    sort: {
+                        type: "string",
+                        enum: ["asc", "desc"],
+                        description: "The sorting for the results (asc or desc), applicable to transaction and event lists"
+                    },
+                    contractaddress: {
+                        type: "string",
+                        description: "The contract address for token queries (tokentx, tokennfttx, token1155tx)"
+                    },
+                    blocktype: {
+                        type: "string",
+                        enum: ["blocks", "uncles"],
+                        description: "The type of blocks to query for 'getminedblocks'"
+                    },
+                    blockno: {
+                        type: "integer",
+                        description: "The specific block number for the 'balancehistory' query"
+                    },
+                    to: {
+                        type: "string",
+                        description: "The address the transaction is directed to. Use in eth_call"
                     }
                 },
-                required: ["address", "action"]
+                required: ["module", "action"]  // Specify required fields here
             }
         }
-    },
+    },    
     {
         type: "function",
         function: {
@@ -147,8 +209,9 @@ const executeFunction = async (functionName: string, args: any) => {
     switch (functionName) {
         case "resolveEnsNameToAddress":
             return await resolveEnsNameToAddress(args);
-        case "getWalletInfo":
-            return await getWalletInfo(args);
+        case "etherscanQuery":
+            // Transform args here if needed before sending them to etherscanApiQuery
+            return await etherscanApiQuery(args);
         case "executeSolanaTokenOverlap":
         case "executeSolanaTokenWalletProfitLoss":
         case "executeSolanaTokenOwnerInfo":
@@ -316,26 +379,29 @@ async function resolveEnsNameToAddress({ ensName } : { ensName: string }) {
     }
 }
 
-// Get Wallet Info using Etherscan
-async function getWalletInfo({ address, action }:{ address: string, action: string }) {
-    console.log(`getWalletInfo called with address: ${address}, action: ${action}`);
+// Generic function to interact with the Etherscan API
+async function etherscanApiQuery(params) {
+    console.log("Received params for Etherscan API:", params); // Debug print to check received parameters
+
     const baseUrl = 'https://api.etherscan.io/api';
-    const apiKey = process.env.ETHERSCAN_API_KEY;
-    const response = await axios.get(baseUrl, {
-        params: {
-            module: 'account',
-            action: action,
-            address: address,
-            offset: 3, // returns only first 3 transactions from the first page
-            page: 1, // returns only the first page
-            apikey: apiKey
+    const queryParams = {
+        apikey: process.env.ETHERSCAN_API_KEY, // Assuming API Key is stored in environment variables
+        ...params // Spread additional parameters into the query
+    };
+
+    try {
+        console.log("Sending request to Etherscan with params:", queryParams); // Debug print to check final query parameters
+        const response = await axios.get(baseUrl, { params: queryParams });
+        console.log("Received response from Etherscan:", response.data); // Debug print to check response data
+
+        if (response.status === 200) {
+            return response.data; // Return the whole response data for flexibility
+        } else {
+            throw new Error(`Etherscan API call failed. Status: ${response.status}`);
         }
-    });
-    if (response.status === 200) {
-        return formatWalletInfo({data: response.data.result, action, address});
-        // return `The ${action} for this address: ${address} is ${response.data.result}`;
-    } else {
-        throw new Error(`Failed to retrieve wallet info. Status code: ${response.status}`);
+    } catch (error) {
+        console.error(`Error calling Etherscan API: ${error.message}`);
+        throw error;
     }
 }
 
