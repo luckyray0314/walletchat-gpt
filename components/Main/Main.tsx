@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Context } from '@/context/Context';
 import { assets } from '@/assets/assets';
 import Header from '../Common/Header';
+import ChatMessage from '../ChatMessage/ChatMessage';
 
 const prompts = [
     {
@@ -30,19 +31,19 @@ const prompts = [
 ]
 
 const Main = () => {
-    const {onSent, recentPrompt, setRecentPrompt, showResult, loading, resultData, setInput, input} = useContext(Context);
+    const {onSent, chatLog, setRecentPrompt, showResult, setInput, input} = useContext(Context);
 
     const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
-            await onSent();
             setInput("")
+            await onSent();
         }
     };
 
     const selectPrompt = async (prompt: string) => {
         setRecentPrompt(prompt);
-        await onSent(prompt);
         setInput("")
+        await onSent(prompt);
     }
 
   return (
@@ -66,27 +67,13 @@ const Main = () => {
                     </div>
                 </>
                 :
-                <div className='result'>
-                    <div className="result-title">
-                        <Image src={assets.mgoes_icon} alt="" />
-                        <p>{recentPrompt}</p>
-                    </div>
-                    <div className='result-data'>
-                        <Image src={assets.wallet_chat} alt="" />
-                        {loading ? 
-                            <div className='loader'>
-                                <hr />
-                                <hr />
-                                <hr />
-                            </div>
-                            :
-                            <p dangerouslySetInnerHTML={{__html: resultData}}></p>
-                        }
-                    </div>
-                </div> 
+                <>
+                    {chatLog?.map((item: any, i: number) => (
+                        <ChatMessage key={i++} prompt={item?.prompt} loading={item?.loading} resultData={item?.resultData} />
+                    ))}
+                </>
             }
             
-
             <div className="main-bottom">
                 <div className="search-box">
                     <input 

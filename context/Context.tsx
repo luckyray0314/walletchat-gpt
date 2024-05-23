@@ -5,8 +5,15 @@ import { createContext, useState } from "react";
 
 export const Context = createContext<any>({} as any);
 
+interface ChatLog {
+    prompt: string;
+    resultData?: string;
+    loading: boolean
+}
+
 const ContextProvider = (props: any) => {
     const [input, setInput] = useState<string>("");
+    const [chatLog, setChatLog] = useState<ChatLog[]>([]);
     const [recentPrompt, setRecentPrompt] = useState<string>("");
     const [prevPrompts, setPrevPromts] = useState<string[]>([]);
     const [showResult, setShowResult] = useState<boolean>(false);
@@ -30,12 +37,25 @@ const ContextProvider = (props: any) => {
         setShowResult(true);
         let response: any;
         if(prompt !== undefined) {
-            response = await runChat(prompt)
+            console.log(prompt)
+            setChatLog([...chatLog, { prompt: prompt, loading: true }]);
             setRecentPrompt(prompt);
+            response = await runChat(prompt)
+            setChatLog(prevChatLog =>
+                prevChatLog.map(chat =>
+                    chat.prompt === prompt ? { ...chat, resultData: response, loading: false } : chat
+                )
+            );
         } else {
             setPrevPromts(prev=>[...prev, input]);
             setRecentPrompt(input);
+            setChatLog([...chatLog, { prompt: input, loading: true }]);
             response = await runChat(input)
+            setChatLog(prevChatLog =>
+                prevChatLog.map(chat =>
+                    chat.prompt === input ? { ...chat, resultData: response, loading: false } : chat
+                )
+            );
         }
         let responseArray = response.split("\\n\\n");
         console.log(responseArray)
@@ -67,6 +87,7 @@ const ContextProvider = (props: any) => {
         loading,
         resultData,
         input,
+        chatLog,
         setInput,
         newChat
     }

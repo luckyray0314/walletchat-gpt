@@ -246,6 +246,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
             model: "gpt-4o",
             messages: conversations[threadId],
             functions: functions.map(f => f.function),
+            function_call: "auto"
         });
 
         if (completion.choices && completion.choices[0].message.function_call) {
