@@ -9,6 +9,20 @@ const openai = new OpenAI({
 });
 const DUNE_API_KEY = process.env.DUNE_API_KEY;
 
+interface EtherscanApiParams {
+    address?: string; // Ethereum address for the query
+    tag?: "latest" | "pending" | "earliest"; // The state of the balance (latest or a block number)
+    startblock?: number; // The start block number for queries that involve transaction or event lists
+    endblock?: number; // The end block cannot exceed 9999999
+    page?: number; // The page number for queries that support pagination
+    offset?: number; // The number of results to return per page for queries that support pagination
+    sort?: "asc" | "desc"; // The sorting for the results (asc or desc), applicable to transaction and event lists
+    contractaddress?: string; // The contract address for token queries (tokentx, tokennfttx, token1155tx)
+    blocktype?: "blocks" | "uncles"; // The type of blocks to query for 'getminedblocks'
+    blockno?: number; // The specific block number for the 'balancehistory' query
+    to?: string; // The address the transaction is directed to. Use in eth_call
+}
+
 const functions: ChatCompletionTool[] = [
     {
         type: "function",
@@ -380,8 +394,8 @@ async function resolveEnsNameToAddress({ ensName } : { ensName: string }) {
 }
 
 // Generic function to interact with the Etherscan API
-async function etherscanApiQuery(params) {
-    console.log("Received params for Etherscan API:", params); // Debug print to check received parameters
+async function etherscanApiQuery(params: EtherscanApiParams) {
+    console.log("Received params for Etherscan API:", params);
 
     const baseUrl = 'https://api.etherscan.io/api';
     const queryParams = {
@@ -399,8 +413,12 @@ async function etherscanApiQuery(params) {
         } else {
             throw new Error(`Etherscan API call failed. Status: ${response.status}`);
         }
-    } catch (error) {
-        console.error(`Error calling Etherscan API: ${error.message}`);
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error(`Error calling Etherscan API: ${error.message}`);
+        } else {
+            console.error(`An unexpected error occurred: ${error}`);
+        }
         throw error;
     }
 }
