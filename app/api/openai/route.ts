@@ -8,6 +8,7 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 const DUNE_API_KEY = process.env.DUNE_API_KEY;
+const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 
 interface EtherscanApiParams {
     address?: string; // Ethereum address for the query
@@ -24,6 +25,23 @@ interface EtherscanApiParams {
 }
 
 const functions: ChatCompletionTool[] = [
+    {
+        type: "function",
+        function: {
+          name: "getCryptocurrencyPrice",
+          description: "Fetches the latest price for a specified cryptocurrency symbol using the CoinMarketCap API",
+          parameters: {
+            type: "object",
+            properties: {
+              symbol: {
+                type: "string",
+                description: "The symbol of the cryptocurrency to fetch, e.g., 'BTC', 'ETH', 'SOL'"
+              }
+            },
+            required: ["symbol"]
+          }
+        }
+    },
     {
         type: "function",
         function: {
@@ -221,6 +239,9 @@ const initializeAssistant = async () => {
 
 const executeFunction = async (functionName: string, args: any) => {
     switch (functionName) {
+        case "getCryptocurrencyPrice":
+            console.log("Args passed to getCryptocurrencyPrice:", args);
+            return await getCryptocurrencyPrice(args);
         case "resolveEnsNameToAddress":
             return await resolveEnsNameToAddress(args);
         case "etherscanQuery":
@@ -420,6 +441,35 @@ async function etherscanApiQuery(params: EtherscanApiParams) {
             console.error(`An unexpected error occurred: ${error}`);
         }
         throw error;
+    }
+}
+
+interface CryptoPriceParams {
+    symbol: string;
+}
+async function getCryptocurrencyPrice(params: CryptoPriceParams): Promise<string> {
+    const { symbol } = params;
+    try {
+        const url = `https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest`;
+        const params = { symbol }; // Correctly formatted object to pass as query params
+        const headers = {
+            'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY, // Ensure you have the API key set in your environment variables
+        };
+    
+        // Log the URL and parameters to debug and ensure they are correctly formatted
+        console.log("Making API request to:", url, "with params:", params);
+    
+        // Make the GET request using Axios with the correct headers and parameters
+        const response = await axios.get(url, { params, headers });
+        if (response.status === 200 && response.data.data[symbol]) {
+            const price = response.data.data[symbol].quote.USD.price;
+            return `The current price of ${symbol} is $${price.toFixed(2)}`;
+        } else {
+            return `Failed to fetch price for ${symbol}`; // Error handling if status is not 200
+        }
+    } catch (error) {
+        console.error(`Error fetching cryptocurrency price: ${error}`);
+        return `Error occurred while fetching price for ${symbol}`; // Returning the error message
     }
 }
 
