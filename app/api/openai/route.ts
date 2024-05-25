@@ -212,6 +212,57 @@ const functions: ChatCompletionTool[] = [
                 required: ["token_address"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "getSolanaAccountPortfolio",
+            description: "Retrieve entire portfolio of a Solana account from the Moralis Solana Gateway",
+            parameters: {
+                type: "object",
+                properties: {
+                    accountId: {
+                        type: "string",
+                        description: "The Solana account ID to query for tokens"
+                    }
+                },
+                required: ["accountId"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "getSolanaTokenPrice",
+            description: "Retrieve price information for a specific Solana token",
+            parameters: {
+                type: "object",
+                properties: {
+                    tokenId: {
+                        type: "string",
+                        description: "The Solana token ID to query for its price"
+                    }
+                },
+                required: ["tokenId"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "getSolanaAccountNFTs",
+            description: "Retrieve NFTs owned by a Solana account from the Moralis Solana Gateway",
+            parameters: {
+                type: "object",
+                properties: {
+                    accountId: {
+                        type: "string",
+                        description: "The Solana account ID to query for NFTs"
+                    }
+                },
+                required: ["accountId"]
+            }
+        }
     }
 ];
 
@@ -255,6 +306,12 @@ const executeFunction = async (functionName: string, args: any) => {
         case "executeEthereumTokenOverlap":
             const executionId = await executeDuneQuery(functionName, args);
             return await pollQueryStatus(executionId);  // Polling for the status and then fetching results
+        case "getSolanaAccountPortfolio":
+            return await getSolanaAccountPortfolio(args.accountId);  // Ensuring args are passed correctly
+        case "getSolanaTokenPrice":
+            return await getSolanaTokenPrice(args.tokenId);  // Ensuring args are passed correctly
+        case "getSolanaAccountNFTs":
+            return await getSolanaAccountNFTs(args.accountId);  // Ensuring args are passed correctly
         default:
             throw new Error(`Unknown function: ${functionName}`);
     }
@@ -448,6 +505,73 @@ async function etherscanApiQuery(params: EtherscanApiParams) {
         } else {
             console.error(`An unexpected error occurred: ${error}`);
         }
+        throw error;
+    }
+}
+
+interface SolanaToken {
+    mint: string;
+    owner: string;
+    amount: string;
+    uiAmount: number;
+}
+
+interface TokenPrice {
+    symbol: string;
+    price: number;
+}
+
+interface SolanaNFT {
+    mint: string;
+    metadata: {
+        name: string;
+        symbol: string;
+        uri: string;
+        sellerFeeBasisPoints: number;
+    };
+}
+interface ApiResponse<T> {
+    tokens?: T[];
+    nfts?: T[];
+}
+
+
+async function getSolanaAccountNFTs(accountId: string): Promise<ApiResponse<SolanaNFT>> {
+    const url = `https://solana-gateway.moralis.io/account/mainnet/${accountId}/nft`;
+    const headers = { 'X-API-Key': process.env.MORALIS_API_KEY };
+
+    try {
+        const response = await axios.get<ApiResponse<SolanaNFT>>(url, { headers });
+        return response.data;
+    } catch (error) {
+        console.error("Failed to fetch Solana account NFTs:", error);
+        throw error;
+    }
+}
+
+async function getSolanaTokenPrice(tokenId: string): Promise<TokenPrice> {
+    const url = `https://solana-gateway.moralis.io/token/mainnet/${tokenId}/price`;
+    const headers = { 'X-API-Key': process.env.MORALIS_API_KEY };
+
+    try {
+        const response = await axios.get<{ price: TokenPrice }>(url, { headers });
+        return response.data.price;
+    } catch (error) {
+        console.error("Failed to fetch Solana token price:", error);
+        throw error;
+    }
+}
+
+async function getSolanaAccountPortfolio(accountId: string): Promise<ApiResponse<SolanaToken>> {
+    const url = `https://solana-gateway.moralis.io/account/mainnet/${accountId}/portfolio`;
+    const headers = { 'X-API-Key': process.env.MORALIS_API_KEY };
+
+    try {
+        console.log("get Solana portfolio (nfts, native and token balance) for: ", accountId)
+        const response = await axios.get<ApiResponse<SolanaToken>>(url, { headers });
+        return response.data;
+    } catch (error) {
+        console.error("Failed to fetch Solana account tokens:", error);
         throw error;
     }
 }
