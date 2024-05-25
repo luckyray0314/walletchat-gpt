@@ -41,9 +41,20 @@ const ContextProvider = (props: any) => {
             setChatLog([...chatLog, { prompt: prompt, loading: true }]);
             setRecentPrompt(prompt);
             response = await runChat(prompt)
+            let responseArray = response.split("**");
+            console.log(responseArray)
+            let newResponse = '';
+            for(let i = 0; i < responseArray.length;  i++) {
+                if(i === 0 || i%2 !== 1) {
+                    newResponse += responseArray[i]
+                } else {
+                    newResponse += "<b>"+responseArray[i]+"</b>"
+                }
+            }
+            let newResponse2 = newResponse.split("\n\n").join("</br>");
             setChatLog(prevChatLog =>
                 prevChatLog.map(chat =>
-                    chat.prompt === prompt ? { ...chat, resultData: response, loading: false } : chat
+                    chat.prompt === prompt ? { ...chat, resultData: newResponse2, loading: false } : chat
                 )
             );
         } else {
@@ -51,23 +62,34 @@ const ContextProvider = (props: any) => {
             setRecentPrompt(input);
             setChatLog([...chatLog, { prompt: input, loading: true }]);
             response = await runChat(input)
+            let responseArray = response.split("**");
+            console.log(responseArray)
+            let newResponse = '';
+            for(let i = 0; i < responseArray.length;  i++) {
+                if(i === 0 || i%2 !== 1) {
+                    newResponse += responseArray[i]
+                } else {
+                    newResponse += "<b>"+responseArray[i]+"</b>"
+                }
+            }
+            let newResponse2 = newResponse.split("\n\n").join("</br>");
             setChatLog(prevChatLog =>
                 prevChatLog.map(chat =>
-                    chat.prompt === input ? { ...chat, resultData: response, loading: false } : chat
+                    chat.prompt === input ? { ...chat, resultData: newResponse2, loading: false } : chat
                 )
             );
         }
-        let responseArray = response.split("\\n\\n");
+        let responseArray = response.split("**");
         console.log(responseArray)
         let newResponse = '';
         for(let i = 0; i < responseArray.length;  i++) {
             if(i === 0 || i%2 !== 1) {
                 newResponse += responseArray[i]
             } else {
-                newResponse += "</br>"+responseArray[i]+"</br>"
+                newResponse += "<b>"+responseArray[i]+"</b>"
             }
         }
-        let newResponse2 = newResponse.split("\\n\\n").join("</br>");
+        let newResponse2 = newResponse.split("*").join("</br>");
         let newResponseArray = newResponse2.split(" ");
         for(let i = 0;  i < newResponseArray.length; i++) {
             const nextWord = newResponseArray[i];

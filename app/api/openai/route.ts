@@ -11,6 +11,8 @@ const DUNE_API_KEY = process.env.DUNE_API_KEY;
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 
 interface EtherscanApiParams {
+    module?: string; // The module to be used
+    action?: string; // The action to be called
     address?: string; // Ethereum address for the query
     tag?: "latest" | "pending" | "earliest"; // The state of the balance (latest or a block number)
     startblock?: number; // The start block number for queries that involve transaction or event lists
@@ -314,6 +316,10 @@ const getQueryResults = async (executionId: string) => {
         }
     });
     if (response.status === 200) {
+        const data = response.data.result.rows;
+        if(Array.isArray(data)) {
+            return data.map((item, index) => `${formatTokenOverlap(item)}`).join('<br>');
+        }
         return response.data;
     } else {
         throw new Error(`Failed to fetch results: ${response.status}`);
@@ -417,6 +423,7 @@ async function resolveEnsNameToAddress({ ensName } : { ensName: string }) {
 // Generic function to interact with the Etherscan API
 async function etherscanApiQuery(params: EtherscanApiParams) {
     console.log("Received params for Etherscan API:", params);
+    // const { action,  } = params
 
     const baseUrl = 'https://api.etherscan.io/api';
     const queryParams = {
@@ -427,10 +434,11 @@ async function etherscanApiQuery(params: EtherscanApiParams) {
     try {
         console.log("Sending request to Etherscan with params:", queryParams); // Debug print to check final query parameters
         const response = await axios.get(baseUrl, { params: queryParams });
-        console.log("Received response from Etherscan:", response.data); // Debug print to check response data
+        console.log("Received response from Etherscan:", response.data.result); // Debug print to check response data
 
         if (response.status === 200) {
-            return response.data; // Return the whole response data for flexibility
+            return formatEtherscanResponse({data: response.data.result, params: params})
+            // return response.data.result; // Return the whole response data for flexibility
         } else {
             throw new Error(`Etherscan API call failed. Status: ${response.status}`);
         }
@@ -473,17 +481,18 @@ async function getCryptocurrencyPrice(params: CryptoPriceParams): Promise<string
     }
 }
 
-function formatWalletInfo({data, action, address}: { data: any, action: string, address: string }) {
+function formatEtherscanResponse({data, params}: { data: any, params: any }) {
+    const { action, address, module } = params;
     if (action === 'txlist') {
         if(Array.isArray(data)) {
             return data.map((item, index) => `Transaction ${index + 1}:</br>${formatTransactionList(item)}`).join('\n');
         }
+    } else if(action === 'eth_call') {
+        return `The ${module} module to call ${action} for is ${data}`;
+    } else if (action === 'balance') {
+        return `The ${action} for this address: ${address} is ${data}`;
     } else {
-        if (action === 'balance') {
-            return `The ${action} for this address: ${address} is ${data}`;
-        } else {
-            return JSON.stringify(data, null, 2);
-        }
+        return JSON.stringify(data, null, 2);
     }
 }
 
@@ -509,5 +518,13 @@ function formatTransactionList(transaction: any) {
     Confirmations: ${transaction.confirmations}</br>
     Method ID: ${transaction.methodId}</br>
     Function Name: ${transaction.functionName}</br>
+    `.trim().split("\n").join("  ");
+}
+
+function formatTokenOverlap(token: any) {
+    return `
+    Contract Address: ${token.contract_address}</br>
+    Holder Count: ${token.holder_count}</br>
+    Token Symbol: ${token.token_symbol}</br>
     `.trim().split("\n").join("  ");
 }

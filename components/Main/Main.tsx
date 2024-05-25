@@ -15,12 +15,12 @@ const prompts = [
     },
     {
         id: 2,
-        prompt: "Give the last 3 transactions for vitalik.eth",
+        prompt: "What is the token overlap for PEPE on Ethereum",
         icon: assets.bulb_icon
     },
     {
         id: 3,
-        prompt: "Use Etherscan to call owner() on the Bored Ape YC contract",
+        prompt: "use etherscan to use the proxy module to call eth_call module to call the owner() function (abi: 0x8da5cb5b) on the bored ape YC contract",
         icon: assets.message_icon
     },
     {
