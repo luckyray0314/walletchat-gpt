@@ -11,8 +11,6 @@ const DUNE_API_KEY = process.env.DUNE_API_KEY;
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 
 interface EtherscanApiParams {
-    module?: string; // The module to be used
-    action?: string; // The action to be called
     address?: string; // Ethereum address for the query
     tag?: "latest" | "pending" | "earliest"; // The state of the balance (latest or a block number)
     startblock?: number; // The start block number for queries that involve transaction or event lists
@@ -290,32 +288,82 @@ const initializeAssistant = async () => {
     }
 };
 
-const executeFunction = async (functionName: string, args: any) => {
+async function askAIForExplanation(message: string): Promise<string> {
+    // Simulate sending a query to an AI. Replace with actual OpenAI API call.
+    // For example, using OpenAI's `openai.ChatCompletion.create()` method:
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4",
+            messages: [{role: "system", content: "Explain the following blockchain result:"}, {role: "user", content: message}]
+        });
+        return completion.choices[0].message.content;
+    } catch (error) {
+        console.error("Failed to get explanation from AI:", error);
+        return "Failed to generate explanation.";
+    }
+}
+
+const executeFunction = async (functionName: string, args: any, userQuestion: string) => {
+    let result;
+    let contextDescription = userQuestion;  // Using the user's question as the context
+    console.log("executing function: ", functionName, args, userQuestion)
+
     switch (functionName) {
         case "getCryptocurrencyPrice":
-            console.log("Args passed to getCryptocurrencyPrice:", args);
             return await getCryptocurrencyPrice(args);
         case "resolveEnsNameToAddress":
-            return await resolveEnsNameToAddress(args);
+            return resolveEnsNameToAddress(args);
         case "etherscanQuery":
-            // Transform args here if needed before sending them to etherscanApiQuery
-            return await etherscanApiQuery(args);
+            result = await etherscanApiQuery(args);
+            break;
         case "executeSolanaTokenOverlap":
         case "executeSolanaTokenWalletProfitLoss":
         case "executeSolanaTokenOwnerInfo":
         case "executeEthereumTokenOverlap":
             const executionId = await executeDuneQuery(functionName, args);
-            return await pollQueryStatus(executionId);  // Polling for the status and then fetching results
-        case "getSolanaAccountPortfolio":
-            return await getSolanaAccountPortfolio(args.accountId);  // Ensuring args are passed correctly
+            return await pollQueryStatus(executionId);
+        case "getSolanaAccountTokens":
+            return await getSolanaAccountPortfolio(args.accountId);
         case "getSolanaTokenPrice":
-            return await getSolanaTokenPrice(args.tokenId);  // Ensuring args are passed correctly
+            return await getSolanaTokenPrice(args.tokenId);
         case "getSolanaAccountNFTs":
-            return await getSolanaAccountNFTs(args.accountId);  // Ensuring args are passed correctly
+            return await getSolanaAccountNFTs(args.accountId);
         default:
             throw new Error(`Unknown function: ${functionName}`);
     }
+
+    // After getting the result, ask for an explanation if necessary
+    if (result) {
+        let explanation;
+        let formattedResult;
+    
+        try {
+            // Extract the result value if it exists or use the whole result if not
+            const resultValue = result.result ? result.result : result;
+            
+            // Prepare the message for the AI, ensuring it's descriptive
+            const message = `Question: ${contextDescription} Result: ${resultValue}`;
+            
+            // Get explanation from AI
+            explanation = await askAIForExplanation(message);
+            
+            // Format the result and explanation for display
+            formattedResult = `${resultValue}\n\nExplanation: ${explanation}`;
+            
+            // Set the formatted result back to result for consistency in data handling
+            result = formattedResult;
+        } catch (error) {
+            console.error("Failed to get explanation from AI:", error);
+            explanation = "Failed to generate an explanation.";
+            
+            // Keep the structure consistent, use only strings or only objects
+            result = `Question: ${contextDescription}\nResult: ${JSON.stringify(result)}\nExplanation: ${explanation}`;
+        }
+    }    
+
+    return result;
 };
+
 
 const executeDuneQuery = async (functionName: string, args: any) => {
     const queryIds: any = {
@@ -373,10 +421,6 @@ const getQueryResults = async (executionId: string) => {
         }
     });
     if (response.status === 200) {
-        const data = response.data.result.rows;
-        if(Array.isArray(data)) {
-            return data.map((item, index) => `${formatTokenOverlap(item)}`).join('<br>');
-        }
         return response.data;
     } else {
         throw new Error(`Failed to fetch results: ${response.status}`);
@@ -413,7 +457,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
         if (completion.choices && completion.choices[0].message.function_call) {
             const functionName = completion.choices[0].message.function_call.name;
             const args = JSON.parse(completion.choices[0].message.function_call.arguments);
-            const functionResult = await executeFunction(functionName, args);
+            const functionResult = await executeFunction(functionName, args, message);
 
             // Append the result of the function execution to the conversation
             conversations[threadId].push({ role: 'assistant', content: functionResult });
@@ -480,7 +524,6 @@ async function resolveEnsNameToAddress({ ensName } : { ensName: string }) {
 // Generic function to interact with the Etherscan API
 async function etherscanApiQuery(params: EtherscanApiParams) {
     console.log("Received params for Etherscan API:", params);
-    // const { action,  } = params
 
     const baseUrl = 'https://api.etherscan.io/api';
     const queryParams = {
@@ -491,11 +534,10 @@ async function etherscanApiQuery(params: EtherscanApiParams) {
     try {
         console.log("Sending request to Etherscan with params:", queryParams); // Debug print to check final query parameters
         const response = await axios.get(baseUrl, { params: queryParams });
-        console.log("Received response from Etherscan:", response.data.result); // Debug print to check response data
+        console.log("Received response from Etherscan:", response.data); // Debug print to check response data
 
         if (response.status === 200) {
-            return formatEtherscanResponse({data: response.data.result, params: params})
-            // return response.data.result; // Return the whole response data for flexibility
+            return response.data; // Return the whole response data for flexibility
         } else {
             throw new Error(`Etherscan API call failed. Status: ${response.status}`);
         }
@@ -605,18 +647,17 @@ async function getCryptocurrencyPrice(params: CryptoPriceParams): Promise<string
     }
 }
 
-function formatEtherscanResponse({data, params}: { data: any, params: any }) {
-    const { action, address, module } = params;
+function formatWalletInfo({data, action, address}: { data: any, action: string, address: string }) {
     if (action === 'txlist') {
         if(Array.isArray(data)) {
             return data.map((item, index) => `Transaction ${index + 1}:</br>${formatTransactionList(item)}`).join('\n');
         }
-    } else if(action === 'eth_call') {
-        return `The ${module} module to call ${action} for is ${data}`;
-    } else if (action === 'balance') {
-        return `The ${action} for this address: ${address} is ${data}`;
     } else {
-        return JSON.stringify(data, null, 2);
+        if (action === 'balance') {
+            return `The ${action} for this address: ${address} is ${data}`;
+        } else {
+            return JSON.stringify(data, null, 2);
+        }
     }
 }
 
@@ -642,13 +683,5 @@ function formatTransactionList(transaction: any) {
     Confirmations: ${transaction.confirmations}</br>
     Method ID: ${transaction.methodId}</br>
     Function Name: ${transaction.functionName}</br>
-    `.trim().split("\n").join("  ");
-}
-
-function formatTokenOverlap(token: any) {
-    return `
-    Contract Address: ${token.contract_address}</br>
-    Holder Count: ${token.holder_count}</br>
-    Token Symbol: ${token.token_symbol}</br>
     `.trim().split("\n").join("  ");
 }
