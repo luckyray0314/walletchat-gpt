@@ -5,6 +5,7 @@ import TemporaryDrawer from "./drawer";
 import "./styles.css";
 import Switch from "@mui/material/Switch";
 import { toast } from "react-toastify";
+import axios from "axios"; // Ensure axios is installed and imported
 
 function Header() {
   const [darkMode, setDarkMode] = useState(false);
@@ -49,6 +50,17 @@ function Header() {
       document.documentElement.setAttribute("data-theme", "light");
   };
 
+  const connectWallet = async () => {
+    const simulatedWalletAddress = `0x${Math.random().toString(16).slice(2, 10)}`;
+    try {
+      const response = await axios.post('/api/connectWallet', { walletAddress: simulatedWalletAddress });
+      console.log(`Wallet connected: ${simulatedWalletAddress}`);
+    } catch (error) {
+      toast.error("Failed to connect wallet.");
+      console.log("Error connecting wallet:", error);
+    }
+  };
+
   return (
     <div className="header">
       <a href="/">
@@ -64,12 +76,9 @@ function Header() {
         <a href="/dashboard">
           <p className="link">Coinlist</p>
         </a>
-        {/* <a href="/watchlist">
-          <p className="link">Watchlist</p>
-        </a> */}
-        <a href="/">
-          <Button text={"connect wallet"} onClick={() => {}} />
-        </a>
+        <a href="#" onClick={connectWallet}>
+        <Button text={"connect wallet"} onClick={connectWallet} />
+      </a>
       </div>
       <div className="drawer-component">
         <TemporaryDrawer />
