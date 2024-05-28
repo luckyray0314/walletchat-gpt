@@ -11,6 +11,8 @@ const DUNE_API_KEY = process.env.DUNE_API_KEY;
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 
 interface EtherscanApiParams {
+    module?: string; // The module to be used
+    action?: string; // The action to be called
     address?: string; // Ethereum address for the query
     tag?: "latest" | "pending" | "earliest"; // The state of the balance (latest or a block number)
     startblock?: number; // The start block number for queries that involve transaction or event lists
@@ -296,7 +298,12 @@ async function askAIForExplanation(message: string): Promise<string> {
             model: "gpt-4",
             messages: [{role: "system", content: "Explain the following blockchain result:"}, {role: "user", content: message}]
         });
-        return completion.choices[0].message.content;
+
+        if(completion?.choices[0]?.message?.content) {
+            return completion?.choices[0]?.message?.content
+        } else {
+            return "Failed to generate explanation.";
+        }
     } catch (error) {
         console.error("Failed to get explanation from AI:", error);
         return "Failed to generate explanation.";
@@ -304,7 +311,7 @@ async function askAIForExplanation(message: string): Promise<string> {
 }
 
 const executeFunction = async (functionName: string, args: any, userQuestion: string) => {
-    let result;
+    let result: any;
     let contextDescription = userQuestion;  // Using the user's question as the context
     console.log("executing function: ", functionName, args, userQuestion)
 
@@ -537,7 +544,8 @@ async function etherscanApiQuery(params: EtherscanApiParams) {
         console.log("Received response from Etherscan:", response.data); // Debug print to check response data
 
         if (response.status === 200) {
-            return response.data; // Return the whole response data for flexibility
+            return formatEtherscanResponse({data: response.data.result, params: params})
+            // return response.data; // Return the whole response data for flexibility
         } else {
             throw new Error(`Etherscan API call failed. Status: ${response.status}`);
         }
@@ -660,6 +668,25 @@ function formatWalletInfo({data, action, address}: { data: any, action: string, 
         }
     }
 }
+function formatEtherscanResponse({data, params}: { data: any, params: any }) {
+    const { action, address, module } = params;
+    if (action === 'txlist') {
+        if(Array.isArray(data)) {
+            return data.map((item, index) => `Transaction ${index + 1}:</br>${formatTransactionList(item)}`).join('\n');
+        }
+    } else if(action === 'eth_call') {
+        return `The ${module} module to call ${action} for is ${data}`;
+    } else if (action === 'balance') {
+        return `The ${action} for this address: ${address} is ${data}`;
+    } else {
+        return JSON.stringify(data, null, 2);
+        if (action === 'balance') {
+            return `The ${action} for this address: ${address} is ${data}`;
+        } else {
+            return JSON.stringify(data, null, 2);
+        }
+    }
+}
 
 function formatTransactionList(transaction: any) {
     return `
@@ -683,5 +710,13 @@ function formatTransactionList(transaction: any) {
     Confirmations: ${transaction.confirmations}</br>
     Method ID: ${transaction.methodId}</br>
     Function Name: ${transaction.functionName}</br>
+    `.trim().split("\n").join("  ");
+}
+
+function formatTokenOverlap(token: any) {
+    return `
+    Contract Address: ${token.contract_address}</br>
+    Holder Count: ${token.holder_count}</br>
+    Token Symbol: ${token.token_symbol}</br>
     `.trim().split("\n").join("  ");
 }

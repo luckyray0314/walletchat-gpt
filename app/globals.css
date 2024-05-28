@@ -145,7 +145,7 @@ a {
   color: var(--white) !important;
 }
 
-.cursor {
+/* .cursor {
   position: fixed;
   transform: translateX(-50%) translateY(-50%);
   pointer-events: none;
@@ -156,9 +156,9 @@ a {
   width: 0.3rem;
   border-radius: 50%;
   transition: all 200ms ease-out;
-}
+} */
 
-.cursor-pointer {
+/* .cursor-pointer {
   position: fixed;
   transform: translateX(-50%) translateY(-50%);
   pointer-events: none;
@@ -169,14 +169,14 @@ a {
   height: 2rem;
   width: 2rem;
   transition: all 400ms ease-out;
-}
+} */
 
-@media only screen and (max-width: 600px) {
+/* @media only screen and (max-width: 600px) {
   .cursor-pointer,
   .cursor {
     display: none;
   }
-}
+} */
 
 @media only screen and (max-width: 600px) {
   .news-wrapper {

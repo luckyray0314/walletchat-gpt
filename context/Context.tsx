@@ -1,7 +1,6 @@
 "use client"
 import runChat from "@/config/openai";
 import { createContext, useState } from "react";
-// import runChat from "../config/gemini";
 
 export const Context = createContext<any>({} as any);
 
@@ -37,12 +36,11 @@ const ContextProvider = (props: any) => {
         setShowResult(true);
         let response: any;
         if(prompt !== undefined) {
-            console.log(prompt)
+            setPrevPromts(prev=>[...prev, prompt]);
             setChatLog([...chatLog, { prompt: prompt, loading: true }]);
             setRecentPrompt(prompt);
             response = await runChat(prompt)
             let responseArray = response.split("**");
-            console.log(responseArray)
             let newResponse = '';
             for(let i = 0; i < responseArray.length;  i++) {
                 if(i === 0 || i%2 !== 1) {
@@ -63,7 +61,6 @@ const ContextProvider = (props: any) => {
             setChatLog([...chatLog, { prompt: input, loading: true }]);
             response = await runChat(input)
             let responseArray = response.split("**");
-            console.log(responseArray)
             let newResponse = '';
             for(let i = 0; i < responseArray.length;  i++) {
                 if(i === 0 || i%2 !== 1) {
@@ -80,7 +77,6 @@ const ContextProvider = (props: any) => {
             );
         }
         let responseArray = response.split("**");
-        console.log(responseArray)
         let newResponse = '';
         for(let i = 0; i < responseArray.length;  i++) {
             if(i === 0 || i%2 !== 1) {

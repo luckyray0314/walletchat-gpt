@@ -5,8 +5,14 @@ import TemporaryDrawer from "./drawer";
 import "./styles.css";
 import Switch from "@mui/material/Switch";
 import { toast } from "react-toastify";
+import { useWeb3Modal } from '@web3modal/wagmi/react'
+import { useAccount, useDisconnect } from 'wagmi'
+import Alert from "../Alert";
 
 function Header() {
+  const { open } = useWeb3Modal()
+  const { disconnect } = useDisconnect()
+  const { address, isConnected } = useAccount()
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
@@ -29,7 +35,8 @@ function Header() {
       }
   }, []);
 
-  const changeMode = () => {
+  const changeMode = (e: any) => {
+      e.preventDefault();
       if (localStorage.getItem("theme") != "dark") {
         setDark();
       } else {
@@ -50,29 +57,36 @@ function Header() {
   };
 
   return (
-    <div className="header">
-      <a href="/">
-        <h1 className="header-text">
-          WalletChat AI<span style={{ color: "var(--blue)" }}>.</span>
-        </h1>
-      </a>
-      <div className="links">
-        <Switch checked={darkMode} onClick={() => changeMode()} />
+    <div>
+      {!isConnected && (
+        <Alert />
+      )}
+      <div className="header">
         <a href="/">
-          <p className="link">Home</p>
+          <h1 className="header-text">
+            WalletChat AI<span style={{ color: "var(--blue)" }}>.</span>
+          </h1>
         </a>
-        <a href="/dashboard">
-          <p className="link">Coinlist</p>
-        </a>
-        {/* <a href="/watchlist">
-          <p className="link">Watchlist</p>
-        </a> */}
-        <a href="/">
-          <Button text={"connect wallet"} onClick={() => {}} />
-        </a>
-      </div>
-      <div className="drawer-component">
-        <TemporaryDrawer />
+        <div className="links">
+          <Switch checked={darkMode} onClick={(e) => changeMode(e)} />
+          <a href="/">
+            <p className="link">Home</p>
+          </a>
+          <a href="/dashboard">
+            <p className="link">Coinlist</p>
+          </a>
+          {isConnected && (
+            <div className="px-4 py-2 rounded-full bg-black text-white cursor-pointer" onClick={() => disconnect()}>
+              <p className="text-white">{`${address?.slice(0, 7)}...${address?.slice(35)}`}</p>
+            </div>
+          )}
+          {!isConnected && (
+            <Button text={"connect wallet"} onClick={() => open()} />
+          )}
+        </div>
+        <div className="drawer-component">
+          <TemporaryDrawer />
+        </div>
       </div>
     </div>
   );

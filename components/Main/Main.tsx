@@ -10,12 +10,12 @@ import ChatMessage from '../ChatMessage/ChatMessage';
 const prompts = [
     {
         id: 1,
-        prompt: "Give the wallet address for crypto-kevin.eth",
+        prompt: "Give the wallet address for crypto-kevin.eth?",
         icon: assets.compass_icon
     },
     {
         id: 2,
-        prompt: "What is the token overlap for PEPE on Ethereum",
+        prompt: "What is the token overlap for PEPE on Ethereum?",
         icon: assets.bulb_icon
     },
     {
@@ -54,13 +54,13 @@ const Main = () => {
                 ? 
                 <>
                     <div className="greet">
-                        <p><span>Hello, Kevin.</span></p>
-                        <p>How can I help you today?</p>
+                        {/* <p><span>Hello, Kevin.</span></p> */}
+                        <p><span>How can I help you today?</span></p>
                     </div>
                     <div className="cards">
                         {prompts?.map((item) => (
                             <div className="card" onClick={() => selectPrompt(item.prompt)} key={item.id}>
-                                <p>{item.prompt}</p>
+                                <p>{`${item.prompt.slice(0, 100)}...`}</p>
                                 <Image src={item.icon} alt="" />
                             </div>
                         ))}
