@@ -10,6 +10,8 @@ const openai = new OpenAI({
 });
 const DUNE_API_KEY = process.env.DUNE_API_KEY;
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
+export const maxDuration = 300; // This function can run for a maximum of 5 seconds
+export const dynamic = 'force-dynamic';
 
 interface EtherscanApiParams {
     module?: string; // The module to be used
