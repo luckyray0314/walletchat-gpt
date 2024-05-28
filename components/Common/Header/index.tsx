@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { useWeb3Modal } from '@web3modal/wagmi/react'
 import { useAccount, useDisconnect } from 'wagmi'
 import Alert from "../Alert";
+import axios from "axios"; // Ensure axios is installed and imported
 
 function Header() {
   const { open } = useWeb3Modal()
@@ -54,6 +55,17 @@ function Header() {
   const setLight = () => {
       localStorage.setItem("theme", "light");
       document.documentElement.setAttribute("data-theme", "light");
+  };
+
+  const connectWallet = async () => {
+    const simulatedWalletAddress = `0x${Math.random().toString(16).slice(2, 10)}`;
+    try {
+      const response = await axios.post('/api/connectWallet', { walletAddress: simulatedWalletAddress });
+      console.log(`Wallet connected: ${simulatedWalletAddress}`);
+    } catch (error) {
+      toast.error("Failed to connect wallet.");
+      console.log("Error connecting wallet:", error);
+    }
   };
 
   return (

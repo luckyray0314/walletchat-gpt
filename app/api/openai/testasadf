@@ -12,8 +12,6 @@ const DUNE_API_KEY = process.env.DUNE_API_KEY;
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 
 interface EtherscanApiParams {
-    module?: string; // The module to be used
-    action?: string; // The action to be called
     address?: string; // Ethereum address for the query
     tag?: "latest" | "pending" | "earliest"; // The state of the balance (latest or a block number)
     startblock?: number; // The start block number for queries that involve transaction or event lists
@@ -269,7 +267,6 @@ const functions: ChatCompletionTool[] = [
 
 let threadId: string;  // Store the thread ID
 const conversations: any = {};  // In-memory store for conversations
-const threadIdByWallet: any = {};  // In-memory store for conversations
 
 let assistant: Assistant;
 
@@ -302,10 +299,12 @@ async function askAIForExplanation(message: string): Promise<string> {
             ]
         });
 
-        if(completion?.choices[0]?.message?.content) {
-            return completion?.choices[0]?.message?.content
+        // Check if the content is not null before returning it
+        if (completion.choices.length > 0 && completion.choices[0].message.content) {
+            return completion.choices[0].message.content;
         } else {
-            return "Failed to generate explanation.";
+            // Handle the case where content is null or choices are empty
+            return "No explanation available.";
         }
     } catch (error) {
         console.error("Failed to get explanation from AI:", error);
@@ -314,7 +313,7 @@ async function askAIForExplanation(message: string): Promise<string> {
 }
 
 const executeFunction = async (functionName: string, args: any, userQuestion: string) => {
-    let result: any;
+    let result;
     let contextDescription = userQuestion;  // Using the user's question as the context
     console.log("executing function: ", functionName, args, userQuestion)
 
@@ -437,97 +436,86 @@ const getQueryResults = async (executionId: string) => {
     }
 };
 
-export const POST = async (req: NextRequest, res: NextResponse) => {
+export const POST = async (req: NextRequest) => {
     await initializeAssistant();
-    const { message } = await req.json();
     const walletAddress = getWalletAddress(req); // Retrieve the wallet address from global state
-    if(!walletAddress) {
-        //default thread ID for those who don't want to connect wallet
-        //this should be removed once we get a landing page (may cause confused if history gets stomped on by others)
-        const thread = await openai.beta.threads.create();
-        threadId = thread.id;
-        conversations[threadId] = []; // Initialize as an array if a new thread is created
-    } else {
-        threadId = threadIdByWallet[walletAddress]
-        if (!threadId) {
-            const thread = await openai.beta.threads.create();
-            threadId = thread.id;
-            conversations[threadId] = []; // Initialize as an array if a new thread is created
-            threadIdByWallet[walletAddress] = thread.id
-        }
-    }
-
-    try {
-        // Ensure we're always working with an array
-        if (!Array.isArray(conversations[threadId])) {
-            conversations[threadId] = []; // Reinitialize if not an array
-        }
-
-        // Append new user message to history
-        conversations[threadId].push({ role: 'user', content: message });
-
-        // OpenAI API call to get response
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: conversations[threadId],
-            functions: functions.map(f => f.function),
-            function_call: "auto"
-        });
-
-        if (completion.choices && completion.choices[0].message.function_call) {
-            const functionName = completion.choices[0].message.function_call.name;
-            const args = JSON.parse(completion.choices[0].message.function_call.arguments);
-            const functionResult = await executeFunction(functionName, args, message);
-
-            // Append the result of the function execution to the conversation
-            conversations[threadId].push({ role: 'assistant', content: functionResult });
-        } else if (completion.choices[0].message.content) {
-            // Append direct text response from OpenAI
-            conversations[threadId].push({ role: 'assistant', content: completion.choices[0].message.content });
-        }
-
-        // Retrieve the latest assistant message from the conversation
-        const latestAssistantMessage = conversations[threadId].filter((entry: any) => entry.role === 'assistant').pop().content;
-
-        // Return the latest message from the assistant
-        return new NextResponse(JSON.stringify(latestAssistantMessage), {
-            status: 200,
-            headers: {'Content-Type': 'text/plain'},
-        });
-
-    } catch (error) {
-        console.error("Error during API call:", error);
-        return new NextResponse(JSON.stringify({ error: "Failed to get completion from OpenAI", details: error }), {
-            status: 500,
+    if (!walletAddress) {
+        return new NextResponse(JSON.stringify({ error: "No wallet connected" }), {
+            status: 400,
             headers: {'Content-Type': 'application/json'},
         });
     }
+
+    // Use walletAddress as a key to manage user-specific threads
+    if (!conversations[walletAddress]) {
+        const thread = await openai.beta.threads.create();
+        conversations[walletAddress] = { threadId: thread.id, messages: [] };
+    }
+
+    const userMessage = await req.json();
+    conversations[walletAddress].messages.push({ role: 'user', content: userMessage.message });
+
+    // Start a run within the thread
+    const run = await openai.beta.threads.runs.create(
+        conversations[walletAddress].threadId,
+        {
+            assistant_id: assistant.id,
+            model: "gpt-4o",
+        }
+    );
+
+    // const run = await openai.beta.threads.runs.create(
+    //     thread.id,
+    //     {
+    //       assistant_id: assistant.id,
+    //       model: "gpt-4o",
+    //       instructions: "New instructions that override the Assistant instructions",
+    //       tools: [{"type": "code_interpreter"}, {"type": "file_search"}]
+    //     }
+    //   );
+
+    // Function to check the status and return messages
+    console.log("run created", run.id, assistant.id, userMessage.message)
+    const latestMessage = await checkStatusAndReturnMessages(conversations[walletAddress].threadId, run.id);
+
+    // Respond with the latest message from the assistant
+    return new NextResponse(JSON.stringify(latestMessage), {
+        status: 200,
+        headers: {'Content-Type': 'application/json'},
+    });
 };
 
 async function checkStatusAndReturnMessages(threadId: string, runId: string) {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
         const interval = setInterval(async () => {
-            console.log(`Checking status of run: ${runId} for thread: ${threadId}`);
-            let runStatus = await openai.beta.threads.runs.retrieve(threadId, runId);
-            if (runStatus.status === "completed") {
+            try {
+                const runStatus = await openai.beta.threads.runs.retrieve(threadId, runId);
+                console.log("Current run status: ", runStatus.status); // Log current status of the run
+
+                if (runStatus.status === "completed") {
+                    clearInterval(interval);
+                    const messages = await openai.beta.threads.messages.list(threadId);
+                    const latestMessage = messages.data.filter(msg => msg.role === 'assistant').pop();
+
+                    console.log("Latest message from assistant:", latestMessage?.content);
+                    resolve(latestMessage?.content || "No content returned."); // Resolve with content or a default message
+                } else if (runStatus.status === "requires_action") {
+                    // Handle cases where further action is required
+                    console.log("Additional action required for completion.");
+                    resolve("Action required by user."); // Resolve with a specific message or prompt user action
+                } else if (runStatus.status === "failed") {
+                    console.log("Run has failed, retrieving failure reasons.");
+                    reject(new Error("Run failed to complete successfully."));
+                }
+            } catch (error) {
                 clearInterval(interval);
-                let messages = await openai.beta.threads.messages.list(threadId);
-                const conversationHistory: any = [];
-                messages.data.forEach((msg: any) => {
-                    const role = msg.role;
-                    const content = msg.content[0].text.value;
-                    conversationHistory.push({ role: role, content: content });
-                });
-
-                // Extract the latest assistant message from the conversation history
-                const latestAssistantMessage = conversationHistory.filter((entry: any) => entry.role === 'assistant').pop().content;
-
-                // Resolve the promise with the latest assistant message
-                resolve(latestAssistantMessage); // This now resolves with only the latest assistant message
+                console.error("Failed to retrieve run status:", error);
+                reject(error);
             }
         }, 2000); // Poll every 2 seconds
     });
 }
+
 
 // ENS name resolving function
 async function resolveEnsNameToAddress({ ensName } : { ensName: string }) {
@@ -557,8 +545,7 @@ async function etherscanApiQuery(params: EtherscanApiParams) {
         console.log("Received response from Etherscan:", response.data); // Debug print to check response data
 
         if (response.status === 200) {
-            return formatEtherscanResponse({data: response.data.result, params: params})
-            // return response.data; // Return the whole response data for flexibility
+            return response.data; // Return the whole response data for flexibility
         } else {
             throw new Error(`Etherscan API call failed. Status: ${response.status}`);
         }
@@ -681,25 +668,6 @@ function formatWalletInfo({data, action, address}: { data: any, action: string, 
         }
     }
 }
-function formatEtherscanResponse({data, params}: { data: any, params: any }) {
-    const { action, address, module } = params;
-    if (action === 'txlist') {
-        if(Array.isArray(data)) {
-            return data.map((item, index) => `Transaction ${index + 1}:</br>${formatTransactionList(item)}`).join('\n');
-        }
-    } else if(action === 'eth_call') {
-        return `The ${module} module to call ${action} for is ${data}`;
-    } else if (action === 'balance') {
-        return `The ${action} for this address: ${address} is ${data}`;
-    } else {
-        return JSON.stringify(data, null, 2);
-        if (action === 'balance') {
-            return `The ${action} for this address: ${address} is ${data}`;
-        } else {
-            return JSON.stringify(data, null, 2);
-        }
-    }
-}
 
 function formatTransactionList(transaction: any) {
     return `
@@ -723,13 +691,5 @@ function formatTransactionList(transaction: any) {
     Confirmations: ${transaction.confirmations}</br>
     Method ID: ${transaction.methodId}</br>
     Function Name: ${transaction.functionName}</br>
-    `.trim().split("\n").join("  ");
-}
-
-function formatTokenOverlap(token: any) {
-    return `
-    Contract Address: ${token.contract_address}</br>
-    Holder Count: ${token.holder_count}</br>
-    Token Symbol: ${token.token_symbol}</br>
     `.trim().split("\n").join("  ");
 }
