@@ -6,7 +6,7 @@ import { Context } from '../../context/Context';
 import Image from 'next/image';
 
 const Sidebar = () => {
-    const [extended, setExtented] = useState<boolean>(false);
+    const [extended, setExtented] = useState<boolean>(true);
     const {onSent, prevPrompts, setRecentPrompt, newChat} = useContext(Context);
 
     const loadPrompt = async (prompt: string) => {
