@@ -285,6 +285,7 @@ const initializeAssistant = async () => {
             - Never tell me how to search for information myself choose from the functions first, then do a web search if not matched \
             - If you encounter an error please try again until you find a working solution \
             - API request timeout is 360 seconds \
+            - for Etherscan API function calls, owner() function abi is 0x8da5cb5b \
             - If the Dune API is taking multiple tries, continue trying until a result is reached, do not allow for other queries until you have a resolution for the current query. \
             - Always return the results from a Dune API query in a sorted order, the results should be returned sorted already so do not re-arrange the results.  For example, if the results return a list of token holders, show the holder count and keep it sorted by highest holder count first. \
             - Always adjust token values according to their decimal places before displaying them. For tokens like USDC that have 6 decimal places, divide the token amount by 10^6 to convert it into a human-readable format. Apply this conversion uniformly to all cryptocurrency token amounts to ensure accuracy in financial representations.",
@@ -582,6 +583,10 @@ async function etherscanApiQuery(params: EtherscanApiParams) {
 }
 
 interface SolanaToken {
+    associatedTokenAddress: any;
+    name: any;
+    symbol: any;
+    amountRaw: any;
     mint: string;
     owner: string;
     amount: string;
@@ -603,6 +608,7 @@ interface SolanaNFT {
     };
 }
 interface ApiResponse<T> {
+    nativeBalance: any;
     tokens?: T[];
     nfts?: T[];
 }
