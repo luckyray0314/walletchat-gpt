@@ -358,9 +358,10 @@ const executeFunction = async (functionName: string, args: any, userQuestion: st
             
             // Get explanation from AI
             explanation = await askAIForExplanation(message);
+            const explanation2 = explanation.split("\n\n").join("</br>")
             
             // Format the result and explanation for display
-            formattedResult = `${resultValue}\n\nExplanation: ${explanation}`;
+            formattedResult = `${resultValue} </br></br> Result Explanation: ${explanation2}`;
             
             // Set the formatted result back to result for consistency in data handling
             result = formattedResult;

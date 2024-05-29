@@ -40,6 +40,10 @@ function Header() {
       }
   }, []);
 
+  useEffect(() => {
+    connectWallet()
+  }, [isConnected, address])
+
   const changeMode = (e: any) => {
       e.preventDefault();
       if (localStorage.getItem("theme") != "dark") {
@@ -62,10 +66,9 @@ function Header() {
   };
 
   const connectWallet = async () => {
-    const simulatedWalletAddress = `0x${Math.random().toString(16).slice(2, 10)}`;
     try {
-      const response = await axios.post('/api/connectWallet', { walletAddress: simulatedWalletAddress });
-      console.log(`Wallet connected: ${simulatedWalletAddress}`);
+      const response = await axios.post('/api/connectWallet', { walletAddress: address });
+      console.log(`Wallet connected: ${address}`);
     } catch (error) {
       toast.error("Failed to connect wallet.");
       console.log("Error connecting wallet:", error);
