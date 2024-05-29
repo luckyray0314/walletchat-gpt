@@ -280,9 +280,9 @@ const initializeAssistant = async () => {
         assistant = await openai.beta.assistants.create({
             name: "Crypto Assistant",
             instructions: "You are a cryptocurrency analyst, use the provided functions to answer questions as needed. \
-            - For token prices first try CoinMarketCap and if that fails just search with Bing \
+            - For token prices first try CoinMarketCap and if that fails do a web search with whatever engine you have access to \
             - For token name to contract address mapping search with Bing and use the token with the largest market cap. For example, when asked (find the token overlap for PEPE) use bing to find the contract address for PEPE. \
-            - Never tell me how to search for information myself choose from the actions in this GPT or search with Bing \
+            - Never tell me how to search for information myself choose from the functions first, then do a web search if not matched \
             - If you encounter an error please try again until you find a working solution \
             - API request timeout is 360 seconds \
             - If the Dune API is taking multiple tries, continue trying until a result is reached, do not allow for other queries until you have a resolution for the current query. \
@@ -334,8 +334,10 @@ const executeFunction = async (functionName: string, args: any, userQuestion: st
         case "executeEthereumTokenOverlap":
             const executionId = await executeDuneQuery(functionName, args);
             return await pollQueryStatus(executionId);
-        case "getSolanaAccountTokens":
-            return await getSolanaAccountPortfolio(args.accountId);
+        case "getSolanaAccountPortfolio":
+            const portfolioData =  await getSolanaAccountPortfolio(args.accountId);
+            const formattedPortfolio = formatSolanaPortfolio(portfolioData);
+            return formattedPortfolio;
         case "getSolanaTokenPrice":
             return await getSolanaTokenPrice(args.tokenId);
         case "getSolanaAccountNFTs":
@@ -673,6 +675,36 @@ async function getCryptocurrencyPrice(params: CryptoPriceParams): Promise<string
         console.error(`Error fetching cryptocurrency price: ${error}`);
         return `Error occurred while fetching price for ${symbol}`; // Returning the error message
     }
+}
+
+function formatSolanaPortfolio(data: ApiResponse<SolanaToken>): string {
+    let formattedResponse = [];
+
+    // Format native balance
+    const solBalance = (data.nativeBalance.lamports / 1e9).toFixed(9) + " SOL";
+    formattedResponse.push(`Native Balance: ${solBalance}<br>`);
+
+    // Format tokens
+    if (data.tokens && data.tokens.length > 0) {
+        formattedResponse.push("<br>--- Tokens ---<br>");
+        data.tokens.forEach(token => {
+            formattedResponse.push(`Mint: ${token.mint}<br>Owner: ${token.owner}<br>Amount: ${token.uiAmount} (raw: ${token.amountRaw})<br>`);
+        });
+    } else {
+        formattedResponse.push("No tokens found.<br>");
+    }
+
+    // Format NFTs
+    if (data.nfts && data.nfts.length > 0) {
+        formattedResponse.push("<br>--- NFTs ---<br>");
+        data.nfts.forEach(nft => {
+            formattedResponse.push(`Name: ${nft.name}<br>Symbol: ${nft.symbol}<br>Mint: ${nft.mint}<br>Associated Token Address: ${nft.associatedTokenAddress}<br>Amount: ${nft.amount}<br>`);
+        });
+    } else {
+        formattedResponse.push("No NFTs found.<br>");
+    }
+
+    return formattedResponse.join('');
 }
 
 function formatEtherscanResponse({data, params}: { data: any, params: any }) {

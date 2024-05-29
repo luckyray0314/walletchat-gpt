@@ -25,7 +25,7 @@ const prompts = [
     },
     {
         id: 4,
-        prompt: "Does crypto-kevin.eth hold any VPP on base?",
+        prompt: "get the portfolio for SOL wallet 8jnC8Zt9fpzUXUQQc12o1pwnJDZkixzLgWSPVJKpXEsK",
         icon: assets.code_icon
     },
 ]
