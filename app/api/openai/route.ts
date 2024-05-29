@@ -433,6 +433,10 @@ const getQueryResults = async (executionId: string) => {
         }
     });
     if (response.status === 200) {
+        const data = response.data.result.rows;
+        if(Array.isArray(data)) {
+            return data.map((item, index) => `${formatTokenOverlap(item)}`).join('<br>');
+        }
         return response.data;
     } else {
         throw new Error(`Failed to fetch results: ${response.status}`);
@@ -670,19 +674,6 @@ async function getCryptocurrencyPrice(params: CryptoPriceParams): Promise<string
     }
 }
 
-function formatWalletInfo({data, action, address}: { data: any, action: string, address: string }) {
-    if (action === 'txlist') {
-        if(Array.isArray(data)) {
-            return data.map((item, index) => `Transaction ${index + 1}:</br>${formatTransactionList(item)}`).join('\n');
-        }
-    } else {
-        if (action === 'balance') {
-            return `The ${action} for this address: ${address} is ${data}`;
-        } else {
-            return JSON.stringify(data, null, 2);
-        }
-    }
-}
 function formatEtherscanResponse({data, params}: { data: any, params: any }) {
     const { action, address, module } = params;
     if (action === 'txlist') {
@@ -694,7 +685,6 @@ function formatEtherscanResponse({data, params}: { data: any, params: any }) {
     } else if (action === 'balance') {
         return `The ${action} for this address: ${address} is ${data}`;
     } else {
-        return JSON.stringify(data, null, 2);
         if (action === 'balance') {
             return `The ${action} for this address: ${address} is ${data}`;
         } else {

@@ -9,12 +9,16 @@ import { useWeb3Modal } from '@web3modal/wagmi/react'
 import { useAccount, useDisconnect } from 'wagmi'
 import Alert from "../Alert";
 import axios from "axios"; // Ensure axios is installed and imported
-
+ 
 function Header() {
   const { open } = useWeb3Modal()
   const { disconnect } = useDisconnect()
   const { address, isConnected } = useAccount()
   const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    connectWallet();
+  }, [isConnected, address])
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
