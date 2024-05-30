@@ -361,24 +361,25 @@ const executeFunction = async (functionName: string, args: any, userQuestion: st
             throw new Error(`Unknown function: ${functionName}`);
     }
 
-    // Ask for an explanation if necessary
-    if (result && askForExplanation) {
-        let explanation;
-        try {
-            const resultValue = result.result ? result.result : result;
-            const message = `Question: ${userQuestion} Result: ${resultValue}`;
-            explanation = await askAIForExplanation(message);
-            const explanationFormatted = explanation.split("\n\n").join("</br>");
-            const explanationFormatted2 = explanationFormatted.split("\n").join("</br>");
-            result = `${resultValue} </br></br> Result Explanation: ${explanationFormatted2}`;
-        } catch (error) {
-            console.error("Failed to get explanation from AI:", error);
-            explanation = "Failed to generate an explanation.";
-            result = `Question: ${userQuestion}\nResult: ${JSON.stringify(result)}\nExplanation: ${explanation}`;
-        }
-    }
+    // Ask for an explanation if necessary - TBD - needs work for streaming a limiting input (transaction results can be too long and error out)
+    // if (result && askForExplanation) {
+    //     let explanation;
+    //     try {
+    //         const resultValue = result.result ? result.result : result;
+    //         const message = `Question: ${userQuestion} Result: ${resultValue}`;
+    //         explanation = await askAIForExplanation(message);
+    //         result = `${resultValue} </br></br> Result Explanation: ${explanation}`;
+    //     } catch (error) {
+    //         console.error("Failed to get explanation from AI:", error);
+    //         explanation = "Failed to generate an explanation.";
+    //         result = `Question: ${userQuestion}\nResult: ${JSON.stringify(result)}\nExplanation: ${explanation}`;
+    //     }
+    // }
 
-    return result;
+    const resultFormatted = result.split("\n\n").join("</br>");
+    const resultFormatted2 = resultFormatted.split("\n").join("</br>");
+
+    return resultFormatted2;
 };
 
 export const POST = async (req: NextRequest, res: NextResponse) => {
