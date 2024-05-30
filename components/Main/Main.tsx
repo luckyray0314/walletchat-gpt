@@ -20,7 +20,7 @@ const prompts = [
     },
     {
         id: 3,
-        prompt: "Use etherscan to call the function owner() on the Bored Ape YC smart contract",
+        prompt: "Use etherscan to call the function owner() on the Bored Ape YC smart contract, use proxy module and eth_call action",
         icon: assets.message_icon
     },
     {

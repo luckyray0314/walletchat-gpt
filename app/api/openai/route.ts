@@ -297,11 +297,12 @@ const initializeAssistant = async () => {
 };
 
 async function askAIForExplanation(message: string): Promise<string> {
+    console.log("asking for explanation of message/result: ", message)
     try {
         const completion = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: "gpt-4o",
             messages: [
-                { role: "system", content: "Explain the following blockchain result:" },
+                { role: "system", content: "Explain the following blockchain result, not how to use the API, if there are duplicate questions just answer one of them:" },
                 { role: "user", content: message }
             ]
         });
@@ -317,68 +318,158 @@ async function askAIForExplanation(message: string): Promise<string> {
     }
 }
 
-const executeFunction = async (functionName: string, args: any, userQuestion: string) => {
+const executeFunction = async (functionName: string, args: any, userQuestion: string, recursionDepth = 0): Promise<any> => {
+    const MAX_RECURSION_DEPTH = 5;
     let result: any;
-    let contextDescription = userQuestion;  // Using the user's question as the context
-    console.log("executing function: ", functionName, args, userQuestion)
+    let askForExplanation = false;
+
+    if (recursionDepth > MAX_RECURSION_DEPTH) {
+        throw new Error("Maximum recursion depth exceeded");
+    }
+
+    console.log("Executing function:", functionName, args, userQuestion);
 
     switch (functionName) {
         case "getCryptocurrencyPrice":
-            return await getCryptocurrencyPrice(args);
+            result = await getCryptocurrencyPrice(args);
+            break;
         case "resolveEnsNameToAddress":
-            return resolveEnsNameToAddress(args);
+            result = await resolveEnsNameToAddress(args);
+            break;
         case "etherscanQuery":
             result = await etherscanApiQuery(args);
+            askForExplanation = true; 
             break;
         case "executeSolanaTokenOverlap":
         case "executeSolanaTokenWalletProfitLoss":
         case "executeSolanaTokenOwnerInfo":
         case "executeEthereumTokenOverlap":
             const executionId = await executeDuneQuery(functionName, args);
-            return await pollQueryStatus(executionId);
+            result = await pollQueryStatus(executionId);
+            break;
         case "getSolanaAccountPortfolio":
-            const portfolioData =  await getSolanaAccountPortfolio(args.accountId);
-            const formattedPortfolio = formatSolanaPortfolio(portfolioData);
-            return formattedPortfolio;
+            const portfolioData = await getSolanaAccountPortfolio(args.accountId);
+            result = formatSolanaPortfolio(portfolioData);
+            break;
         case "getSolanaTokenPrice":
-            return await getSolanaTokenPrice(args.tokenId);
+            result = await getSolanaTokenPrice(args.tokenId);
+            break;
         case "getSolanaAccountNFTs":
-            return await getSolanaAccountNFTs(args.accountId);
+            result = await getSolanaAccountNFTs(args.accountId);
+            break;
         default:
             throw new Error(`Unknown function: ${functionName}`);
     }
 
-    // After getting the result, ask for an explanation if necessary
-    if (result) {
+    // Ask for an explanation if necessary
+    if (result && askForExplanation) {
         let explanation;
-        let formattedResult;
-    
         try {
-            // Extract the result value if it exists or use the whole result if not
             const resultValue = result.result ? result.result : result;
-            
-            // Prepare the message for the AI, ensuring it's descriptive
-            const message = `Question: ${contextDescription} Result: ${resultValue}`;
-            
-            // Get explanation from AI
+            const message = `Question: ${userQuestion} Result: ${resultValue}`;
             explanation = await askAIForExplanation(message);
-            const explanation2 = explanation.split("\n\n").join("</br>")
-            
-            // Format the result and explanation for display
-            formattedResult = `${resultValue} </br></br> Result Explanation: ${explanation2}`;
-            
-            // Set the formatted result back to result for consistency in data handling
-            result = formattedResult;
+            const explanationFormatted = explanation.split("\n\n").join("</br>");
+            const explanationFormatted2 = explanationFormatted.split("\n").join("</br>");
+            result = `${resultValue} </br></br> Result Explanation: ${explanationFormatted2}`;
         } catch (error) {
             console.error("Failed to get explanation from AI:", error);
             explanation = "Failed to generate an explanation.";
-            
-            // Keep the structure consistent, use only strings or only objects
-            result = `Question: ${contextDescription}\nResult: ${JSON.stringify(result)}\nExplanation: ${explanation}`;
+            result = `Question: ${userQuestion}\nResult: ${JSON.stringify(result)}\nExplanation: ${explanation}`;
         }
-    }    
+    }
 
     return result;
+};
+
+export const POST = async (req: NextRequest, res: NextResponse) => {
+    await initializeAssistant();
+    const { message } = await req.json();
+    const walletAddress = getWalletAddress(req); // Retrieve the wallet address from global state
+    if (!walletAddress) {
+        // Default thread ID for those who don't want to connect wallet
+        const thread = await openai.beta.threads.create();
+        threadId = thread.id;
+        conversations[threadId] = []; // Initialize as an array if a new thread is created
+    } else {
+        threadId = threadIdByWallet[walletAddress];
+        if (!threadId) {
+            const thread = await openai.beta.threads.create();
+            threadId = thread.id;
+            conversations[threadId] = []; // Initialize as an array if a new thread is created
+            threadIdByWallet[walletAddress] = thread.id;
+        }
+    }
+
+    try {
+        // Ensure we're always working with an array
+        if (!Array.isArray(conversations[threadId])) {
+            conversations[threadId] = [];
+        }
+    
+        // Append new user message to history
+        conversations[threadId].push({ role: 'user', content: message });
+    
+        let functionResult;
+        let keepProcessing = true;
+        let previousCalls: string[] = []; // Array to keep track of previous function calls and their arguments
+    
+        while (keepProcessing) {
+            // OpenAI API call to get response
+            const completion = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: conversations[threadId],
+                functions: functions.map(f => f.function),
+                function_call: "auto"
+            });
+    
+            if (completion.choices && completion.choices[0].message.function_call) {
+                const functionName = completion.choices[0].message.function_call.name;
+                const args = JSON.parse(completion.choices[0].message.function_call.arguments);
+    
+                // Create a string representation of the function call and its arguments to check for duplicates
+                const callSignature = `${functionName}(${JSON.stringify(args)})`;
+                console.log("call signature: ", callSignature)
+                console.log("previous Calls: ", previousCalls)
+    
+                if (previousCalls.includes(callSignature)) {
+                    // If this function call with these arguments was previously made, break the loop to avoid infinite recursion
+                    keepProcessing = false;
+                } else {
+                    // Store the call signature in the history
+                    previousCalls.push(callSignature);
+    
+                    // Execute the function and store the result
+                    functionResult = await executeFunction(functionName, args, message);
+    
+                    // Append the result of the function execution to the conversation
+                    conversations[threadId].push({ role: 'assistant', content: functionResult });
+    
+                    // Continue processing by default, unless stopped by duplicate detection
+                    keepProcessing = true;
+                }
+            } else {
+                // If no function call is suggested, append direct text response from OpenAI and stop processing
+                conversations[threadId].push({ role: 'assistant', content: completion.choices[0].message.content });
+                keepProcessing = false;
+            }
+        }
+    
+        // Retrieve the latest assistant message from the conversation
+        const latestAssistantMessage = conversations[threadId].filter((entry: { role: string; }) => entry.role === 'assistant').pop().content;
+    
+        // Return the latest message from the assistant
+        return new NextResponse(JSON.stringify(latestAssistantMessage), {
+            status: 200,
+            headers: { 'Content-Type': 'text/plain' },
+        });
+    
+    } catch (error) {
+        console.error("Error during API call:", error);
+        return new NextResponse(JSON.stringify({ error: "Failed to get completion from OpenAI", details: error }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }    
 };
 
 
@@ -445,73 +536,6 @@ const getQueryResults = async (executionId: string) => {
         return response.data;
     } else {
         throw new Error(`Failed to fetch results: ${response.status}`);
-    }
-};
-
-export const POST = async (req: NextRequest, res: NextResponse) => {
-    await initializeAssistant();
-    const { message } = await req.json();
-    const walletAddress = getWalletAddress(req); // Retrieve the wallet address from global state
-    if(!walletAddress) {
-        //default thread ID for those who don't want to connect wallet
-        //this should be removed once we get a landing page (may cause confused if history gets stomped on by others)
-        const thread = await openai.beta.threads.create();
-        threadId = thread.id;
-        conversations[threadId] = []; // Initialize as an array if a new thread is created
-    } else {
-        threadId = threadIdByWallet[walletAddress]
-        if (!threadId) {
-            const thread = await openai.beta.threads.create();
-            threadId = thread.id;
-            conversations[threadId] = []; // Initialize as an array if a new thread is created
-            threadIdByWallet[walletAddress] = thread.id
-        }
-    }
-
-    try {
-        // Ensure we're always working with an array
-        if (!Array.isArray(conversations[threadId])) {
-            conversations[threadId] = []; // Reinitialize if not an array
-        }
-
-        // Append new user message to history
-        conversations[threadId].push({ role: 'user', content: message });
-
-        // OpenAI API call to get response
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: conversations[threadId],
-            functions: functions.map(f => f.function),
-            function_call: "auto"
-        });
-
-        if (completion.choices && completion.choices[0].message.function_call) {
-            const functionName = completion.choices[0].message.function_call.name;
-            const args = JSON.parse(completion.choices[0].message.function_call.arguments);
-            const functionResult = await executeFunction(functionName, args, message);
-
-            // Append the result of the function execution to the conversation
-            conversations[threadId].push({ role: 'assistant', content: functionResult });
-        } else if (completion.choices[0].message.content) {
-            // Append direct text response from OpenAI
-            conversations[threadId].push({ role: 'assistant', content: completion.choices[0].message.content });
-        }
-
-        // Retrieve the latest assistant message from the conversation
-        const latestAssistantMessage = conversations[threadId].filter((entry: any) => entry.role === 'assistant').pop().content;
-
-        // Return the latest message from the assistant
-        return new NextResponse(JSON.stringify(latestAssistantMessage), {
-            status: 200,
-            headers: {'Content-Type': 'text/plain'},
-        });
-
-    } catch (error) {
-        console.error("Error during API call:", error);
-        return new NextResponse(JSON.stringify({ error: "Failed to get completion from OpenAI", details: error }), {
-            status: 500,
-            headers: {'Content-Type': 'application/json'},
-        });
     }
 };
 
