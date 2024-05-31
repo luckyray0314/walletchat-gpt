@@ -25,7 +25,7 @@ const prompts = [
     },
     {
         id: 4,
-        prompt: `get the portfolio for SOL wallet ${'8jnC8Zt9fpzUXUQQc12o1pwnJDZkixzLgWSPVJKpXEsK'.slice(0, 15)}...`,
+        prompt: 'get the portfolio for SOL wallet 8jnC8Zt9fpzUXUQQc12o1pwnJDZkixzLgWSPVJKpXEsK',
         icon: assets.code_icon
     },
 ]
@@ -60,7 +60,7 @@ const Main = () => {
                     <div className="cards">
                         {prompts?.map((item) => (
                             <div className="card" onClick={() => selectPrompt(item.prompt)} key={item.id}>
-                                <p>{`${item.prompt.slice(0, 100)}...`}</p>
+                                <p>{`${item.prompt.slice(0, 50)}...`}</p>
                                 <Image src={item.icon} alt="" />
                             </div>
                         ))}
