@@ -25,7 +25,7 @@ const prompts = [
     },
     {
         id: 4,
-        prompt: "get the portfolio for SOL wallet 8jnC8Zt9fpzUXUQQc12o1pwnJDZkixzLgWSPVJKpXEsK",
+        prompt: `get the portfolio for SOL wallet ${'8jnC8Zt9fpzUXUQQc12o1pwnJDZkixzLgWSPVJKpXEsK'.slice(0, 15)}...`,
         icon: assets.code_icon
     },
 ]
