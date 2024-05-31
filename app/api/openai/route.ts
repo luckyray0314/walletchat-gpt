@@ -83,6 +83,7 @@ const functions: ChatCompletionTool[] = [
                         enum: [
                             "balance",
                             "txlist",
+                            "tokenbalance",
                             "getsourcecode",
                             "balancemulti",
                             "txlistinternal",
@@ -381,6 +382,7 @@ const executeFunction = async (functionName: string, args: any, userQuestion: st
 
     return resultFormatted2;
 };
+
 
 export const POST = async (req: NextRequest, res: NextResponse) => {
     await initializeAssistant();
@@ -740,21 +742,22 @@ function formatSolanaPortfolio(data: ApiResponse<SolanaToken>): string {
 }
 
 function formatEtherscanResponse({data, params}: { data: any, params: any }) {
-    const { action, address, module } = params;
+    const { action, address, contractaddress, module } = params;
     if (action === 'txlist') {
         if(Array.isArray(data)) {
             return data.map((item, index) => `Transaction ${index + 1}:</br>${formatTransactionList(item)}`).join('\n');
         }
     } else if(action === 'eth_call') {
-        return `The ${module} module to call ${action} for is ${data}`;
+        return `The ${module} module to call ${action} for is ${data.replace(/\\n\\n/g, '\n')}`;
     } else if (action === 'balance') {
-        return `The ${action} for this address: ${address} is ${data}`;
-    } else {
-        if (action === 'balance') {
-            return `The ${action} for this address: ${address} is ${data}`;
-        } else {
-            return JSON.stringify(data, null, 2);
-        }
+        return `The ${action} for this address: ${address} is ${data.replace(/\\n\\n/g, '\n')}`;
+    } else if(action === 'balance') {
+        return `The ${action} for this address: ${address} is ${data.replace(/\\n\\n/g, '\n')}`;
+    } else if(action === 'tokenbalance') {
+        return `The ${action} for ${contractaddress} held by address: ${address} is ${data.replace(/\\n\\n/g, '\n')}`;
+    }
+     else {
+        return JSON.stringify(data.replace(/\\n\\n/g, '\n'), null, 2);
     }
 }
 
